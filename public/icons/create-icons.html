@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Create PWA Icons</title>
+</head>
+<body>
+    <canvas id="canvas" width="512" height="512" style="border: 1px solid #ccc;"></canvas>
+    
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Background
+        ctx.fillStyle = '#2563eb';
+        ctx.fillRect(0, 0, 512, 512);
+        
+        // Icon (Admin shield)
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 300px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('🛡️', 256, 256);
+        
+        // Download function
+        function downloadIcon(size) {
+            const newCanvas = document.createElement('canvas');
+            newCanvas.width = size;
+            newCanvas.height = size;
+            const newCtx = newCanvas.getContext('2d');
+            
+            newCtx.fillStyle = '#2563eb';
+            newCtx.fillRect(0, 0, size, size);
+            
+            newCtx.fillStyle = '#ffffff';
+            newCtx.font = `bold ${size * 0.6}px Arial`;
+            newCtx.textAlign = 'center';
+            newCtx.textBaseline = 'middle';
+            newCtx.fillText('🛡️', size/2, size/2);
+            
+            const link = document.createElement('a');
+            link.download = `icon-${size}x${size}.png`;
+            link.href = newCanvas.toDataURL();
+            link.click();
+        }
+        
+        // Create all sizes
+        const sizes = [72, 96, 128, 144, 152, 192, 384, 512];
+        
+        setTimeout(() => {
+            sizes.forEach((size, index) => {
+                setTimeout(() => downloadIcon(size), index * 500);
+            });
+        }, 1000);
+    </script>
+</body>
+</html>
