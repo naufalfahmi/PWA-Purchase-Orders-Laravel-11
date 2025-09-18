@@ -12,6 +12,7 @@ Aplikasi admin PWA (Progressive Web App) untuk manajemen barang dan purchase ord
 - **Mobile-First Design** - Interface khusus mobile dengan bottom navigation
 - **PWA Support** - Installable sebagai aplikasi mobile
 - **Responsive Design** - Menggunakan Tailwind CSS
+- **CSS Mobile Fix** - Triple fallback protection untuk CSS loading di mobile
 
 ## 📱 Teknologi
 
@@ -32,8 +33,8 @@ Aplikasi admin PWA (Progressive Web App) untuk manajemen barang dan purchase ord
 
 1. **Clone repository**
    ```bash
-   git clone <repository-url>
-   cd pwa-mobile
+   git clone https://gitlab.com/mnaufalfahmi/munah-pwa.git
+   cd munah-pwa
    ```
 
 2. **Install dependencies**
@@ -60,8 +61,6 @@ Aplikasi admin PWA (Progressive Web App) untuk manajemen barang dan purchase ord
 
 5. **Build assets**
    ```bash
-   npm run dev
-   # atau
    npm run build
    ```
 
@@ -92,6 +91,7 @@ Aplikasi admin PWA (Progressive Web App) untuk manajemen barang dan purchase ord
 - Bottom navigation bar
 - Responsive design untuk berbagai ukuran layar
 - Fast loading dengan optimized assets
+- **CSS Mobile Fix** - Triple fallback protection
 
 ## 🗂️ Struktur Aplikasi
 
@@ -107,6 +107,8 @@ Aplikasi admin PWA (Progressive Web App) untuk manajemen barang dan purchase ord
 │   ├── css/                # Tailwind CSS
 │   └── js/                 # JavaScript files
 ├── public/
+│   ├── build/              # Compiled assets
+│   ├── css/                # Fallback CSS
 │   ├── icons/              # PWA icons
 │   ├── manifest.json       # PWA manifest
 │   └── sw.js              # Service Worker
@@ -119,24 +121,29 @@ Aplikasi admin PWA (Progressive Web App) untuk manajemen barang dan purchase ord
 ### Mobile Layout
 - **Header**: Title dan user info
 - **Content**: Main content area dengan padding
-- **Bottom Navigation**: 4 tab navigation (Dashboard, PO, Barang, Profile)
+- **Bottom Navigation**: 4-5 tab navigation (Dashboard, PO, Laporan, Barang, Profile)
 
 ### Navigation Tabs
 1. **Dashboard** - Overview dan quick actions
 2. **Purchase Order** - Manage purchase orders
-3. **Data Barang** - Manage inventory
-4. **Profile** - User profile dan settings
+3. **Laporan** - Reports (Owner only)
+4. **Data Barang** - Manage inventory
+5. **Profile** - User profile dan settings
 
 ## 📊 Database Schema
 
 ### Tables
 - `users` - User authentication
-- `barangs` - Product/inventory data
-- `purchase_orders` - Purchase order management
+- `roles` - User roles (Owner, Sales)
+- `products` - Product/inventory data
+- `suppliers` - Supplier data
+- `sales` - Sales data
+- `sales_transactions` - Purchase order management
 
 ### Relationships
-- `PurchaseOrder` belongs to `Barang`
-- `Barang` has many `PurchaseOrder`
+- `User` belongs to `Role`
+- `SalesTransaction` belongs to `Product` and `Sales`
+- `Product` belongs to `Supplier`
 
 ## 🔧 Development
 
@@ -177,11 +184,12 @@ npm run build
 4. Deploy ke server
 
 ### PWA Deployment Checklist
-- [ ] HTTPS enabled
-- [ ] Service Worker registered
-- [ ] Manifest.json accessible
-- [ ] Icons available
-- [ ] Offline functionality tested
+- [x] HTTPS enabled
+- [x] Service Worker registered
+- [x] Manifest.json accessible
+- [x] Icons available
+- [x] Offline functionality tested
+- [x] CSS mobile fallback implemented
 
 ## 📝 API Endpoints
 
@@ -192,10 +200,11 @@ npm run build
 
 ### Protected Routes
 - `GET /dashboard` - Dashboard
-- `GET /purchase-order` - List PO
-- `POST /purchase-order` - Create PO
+- `GET /sales-transaction` - List PO
+- `POST /sales-transaction` - Create PO
 - `GET /data-barang` - List barang
 - `POST /data-barang` - Create barang
+- `GET /reports` - Reports (Owner only)
 - `GET /profile` - Profile page
 
 ## 🤝 Contributing
@@ -204,7 +213,7 @@ npm run build
 2. Create feature branch
 3. Commit changes
 4. Push to branch
-5. Create Pull Request
+5. Create Merge Request
 
 ## 📄 License
 
