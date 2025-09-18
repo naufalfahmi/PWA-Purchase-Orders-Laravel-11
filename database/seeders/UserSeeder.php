@@ -20,15 +20,7 @@ class UserSeeder extends Seeder
         $ownerRole = Role::where('slug', 'owner')->first();
         $salesRole = Role::where('slug', 'sales')->first();
 
-        // Create Admin User
-        $admin = User::create([
-            'name' => 'Admin User',
-            'username' => 'admin',
-            'email' => 'admin@example.com',
-            'password' => Hash::make('password'),
-            'email_verified_at' => now(),
-        ]);
-        $admin->roles()->attach($adminRole);
+        // Admin user removed - no demo accounts
 
         // Create Owner Users
         $owners = [
@@ -139,7 +131,6 @@ class UserSeeder extends Seeder
         }
 
         $this->command->info('Users created successfully!');
-        $this->command->info('Admin: admin@example.com / password');
         $this->command->info('Owners: budi@company.com, siti@company.com, ahmad@company.com / owner123');
         $this->command->info('Sales: dewi@company.com, eko@company.com, fina@company.com, etc. / sales123');
     }
