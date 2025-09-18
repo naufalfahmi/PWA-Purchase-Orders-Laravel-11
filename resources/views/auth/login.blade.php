@@ -96,14 +96,6 @@
         </div>
     </form>
 
-    <!-- Demo Credentials -->
-    <div class="mt-6 p-4 bg-gray-50 rounded-lg">
-        <h3 class="text-sm font-medium text-gray-900 mb-2">Demo Credentials (Sales & Owner):</h3>
-        <p class="text-xs text-gray-600">Username: ahmad_sales | Email: ahmad.sales@gmail.com</p>
-        <p class="text-xs text-gray-600">Username: salesfahmi@admin.com | Email: salesfahmi@admin.com</p>
-        <p class="text-xs text-gray-600">Username: owner | Email: owner@company.com</p>
-        <p class="text-xs text-gray-600">Password: password / password123</p>
-    </div>
 </div>
 
 <script>
