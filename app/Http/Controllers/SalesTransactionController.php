@@ -117,7 +117,7 @@ class SalesTransactionController extends Controller
             $currentSales = Sales::where('name', auth()->user()->name)->first();
         }
         $defaultPoNumber = 'PO-' . date('Ymd') . '-' . rand(1000, 9999);
-        $orderAccOptions = DB::table('order_acc_options')->pluck('name');
+        $orderAccOptions = DB::table('order_acc_options')->where('is_active', true)->pluck('name');
         return view('sales-transaction.bulk-create', compact('suppliers', 'salesList', 'currentSales', 'defaultPoNumber', 'orderAccOptions'));
     }
 
@@ -370,7 +370,7 @@ class SalesTransactionController extends Controller
         if (auth()->check()) {
             $currentSales = Sales::where('name', auth()->user()->name)->first();
         }
-        $orderAccOptions = \DB::table('order_acc_options')->pluck('name');
+        $orderAccOptions = \DB::table('order_acc_options')->where('is_active', true)->pluck('name');
 
         // Prepare form data
         $header = [
