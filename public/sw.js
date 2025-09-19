@@ -1,4 +1,4 @@
-const CACHE_NAME = 'admin-pwa-v2';
+const CACHE_NAME = 'admin-pwa-v3';
 const urlsToCache = [
   '/',
   '/login',
@@ -6,6 +6,7 @@ const urlsToCache = [
   '/purchase-order',
   '/data-barang',
   '/profile',
+  '/offline.html',
   '/build/assets/app-D5mplNn1.css',
   '/build/assets/app-BIUlJ5IE.js',
   '/css/mobile-fallback.css',
@@ -27,6 +28,24 @@ self.addEventListener('install', event => {
 
 // Fetch event - serve from cache, fallback to network
 self.addEventListener('fetch', event => {
+  // Offline fallback for navigation requests
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      (async () => {
+        try {
+          const cachedPage = await caches.match(event.request);
+          if (cachedPage) return cachedPage;
+          const networkResponse = await fetch(event.request);
+          return networkResponse;
+        } catch (error) {
+          const offlinePage = await caches.match('/offline.html');
+          return offlinePage || new Response('You are offline', { status: 503, headers: { 'Content-Type': 'text/plain' } });
+        }
+      })()
+    );
+    return;
+  }
+
   // Handle download requests specially
   if (event.request.url.includes('/test-export-')) {
     event.respondWith(
@@ -75,6 +94,14 @@ self.addEventListener('fetch', event => {
 
           return response;
         });
+      })
+      .catch(async () => {
+        // As a safety net for non-navigation requests, try to serve offline page for HTML requests
+        if (event.request.headers.get('accept')?.includes('text/html')) {
+          const offlinePage = await caches.match('/offline.html');
+          if (offlinePage) return offlinePage;
+        }
+        return new Response('Offline', { status: 503, headers: { 'Content-Type': 'text/plain' } });
       })
   );
 });
