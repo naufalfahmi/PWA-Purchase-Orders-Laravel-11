@@ -24,15 +24,10 @@ $isMobile = request()->header('User-Agent') &&
             Aplikasi ini dirancang khusus untuk perangkat mobile. Untuk pengalaman terbaik, silakan akses menggunakan smartphone atau tablet.
         </p>
         
-        <!-- QR Code Placeholder -->
+        <!-- QR Code -->
         <div class="bg-gray-100 rounded-lg p-4 mb-6">
-            <div class="w-32 h-32 bg-white rounded border-2 border-dashed border-gray-300 mx-auto flex items-center justify-center">
-                <div class="text-center">
-                    <svg class="w-8 h-8 text-gray-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h4M4 4h4m12 0h4"></path>
-                    </svg>
-                    <p class="text-xs text-gray-500">QR Code</p>
-                </div>
+            <div id="qrcode-component" class="w-32 h-32 bg-white rounded border border-gray-200 mx-auto flex items-center justify-center">
+                <img id="qrcode-component-img" alt="QR Code" src="https://api.qrserver.com/v1/create-qr-code/?size=128x128&data={{ urlencode(route('login').'?force_mobile=1') }}">
             </div>
             <p class="text-xs text-gray-500 mt-2">Scan untuk akses mobile</p>
         </div>
@@ -72,6 +67,37 @@ $isMobile = request()->header('User-Agent') &&
 </div>
 
 <script>
+// Load QRCode library if not present (fallback)
+(function() {
+    if (!window.QRCode) {
+        var s = document.createElement('script');
+        s.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
+        s.async = true;
+        s.onload = generateQr;
+        document.head.appendChild(s);
+        return;
+    }
+    generateQr();
+})();
+
+function generateQr() {
+    try {
+        var qrContainer = document.getElementById('qrcode-component');
+        var qrImg = document.getElementById('qrcode-component-img');
+        if (qrContainer && window.QRCode) {
+            var loginUrl = '{{ route("login") }}?force_mobile=1';
+            new QRCode(qrContainer, {
+                text: loginUrl,
+                width: 128,
+                height: 128,
+                correctLevel: QRCode.CorrectLevel.M
+            });
+            if (qrImg) { qrImg.style.display = 'none'; }
+        }
+    } catch (e) {
+        console.error('QR generation failed', e);
+    }
+}
 function forceMobileView() {
     // Set cookie untuk bypass mobile check
     document.cookie = "force_mobile_view=true; path=/; max-age=3600";

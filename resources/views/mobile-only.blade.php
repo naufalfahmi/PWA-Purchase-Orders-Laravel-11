@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mobile Only - Admin PWA</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" integrity="sha512-J7q8g8Kp1bW8F0h2mE1sH2L3+5QxgYkz3N0K0m0+5t4S5bXo3qkQqfXq5Q9H7Yv2s1mJ9wZC7w0WcEwQyQ4v6g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
         body { font-family: 'Inter', system-ui, sans-serif; }
@@ -28,15 +29,10 @@
                 Aplikasi ini dirancang khusus untuk perangkat mobile. Untuk pengalaman terbaik, silakan akses menggunakan smartphone atau tablet.
             </p>
             
-            <!-- QR Code Placeholder -->
+            <!-- QR Code -->
             <div class="bg-gray-100 rounded-lg p-4 mb-6">
-                <div class="w-32 h-32 bg-white rounded border-2 border-dashed border-gray-300 mx-auto flex items-center justify-center">
-                    <div class="text-center">
-                        <svg class="w-8 h-8 text-gray-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h4M4 4h4m12 0h4"></path>
-                        </svg>
-                        <p class="text-xs text-gray-500">QR Code</p>
-                    </div>
+                <div id="qrcode" class="w-32 h-32 bg-white rounded border border-gray-200 mx-auto flex items-center justify-center">
+                    <img id="qrcode-img" alt="QR Code" src="https://api.qrserver.com/v1/create-qr-code/?size=128x128&data={{ urlencode(route('login').'?force_mobile=1') }}">
                 </div>
                 <p class="text-xs text-gray-500 mt-2">Scan untuk akses mobile</p>
             </div>
@@ -106,6 +102,27 @@
                     });
             });
         }
+
+        // Generate QR Code for login URL (force mobile)
+        document.addEventListener('DOMContentLoaded', function() {
+            try {
+                var qrContainer = document.getElementById('qrcode');
+                var qrImg = document.getElementById('qrcode-img');
+                if (qrContainer && window.QRCode) {
+                    // Use absolute login URL with force_mobile=1
+                    var loginUrl = '{{ route("login") }}?force_mobile=1';
+                    new QRCode(qrContainer, {
+                        text: loginUrl,
+                        width: 128,
+                        height: 128,
+                        correctLevel: QRCode.CorrectLevel.M
+                    });
+                    if (qrImg) { qrImg.style.display = 'none'; }
+                }
+            } catch (e) {
+                console.error('QR generation failed', e);
+            }
+        });
     </script>
 </body>
 </html>
