@@ -1,7 +1,8 @@
 // Register Service Worker
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js')
+        const swVersion = 'v3';
+        navigator.serviceWorker.register(`/sw.js?v=${swVersion}`)
             .then(registration => {
                 console.log('SW registered: ', registration);
             })
