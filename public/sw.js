@@ -24,6 +24,8 @@ self.addEventListener('install', event => {
         return cache.addAll(urlsToCache);
       })
   );
+  // Activate updated SW immediately
+  self.skipWaiting();
 });
 
 // Fetch event - serve from cache, fallback to network
@@ -120,6 +122,8 @@ self.addEventListener('activate', event => {
       );
     })
   );
+  // Take control of open clients immediately
+  self.clients.claim();
 });
 
 // Push notification event
