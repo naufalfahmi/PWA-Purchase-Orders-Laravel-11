@@ -3,19 +3,19 @@
 @section('title', 'Purchase Orders - Admin PWA')
 @section('page-title', 'Purchase Orders')
 
+
 @section('content')
 <div class="p-4 space-y-4">
     <!-- Header Actions -->
-    <div class="flex items-center justify-between">
-        <div class="flex items-center space-x-2">
-            
+    <div class="flex items-center space-x-3">
+        <div class="relative flex-1">
             <form method="GET" action="{{ route('sales-transaction.index') }}" class="relative flex items-center" id="searchForm">
                 <input 
                     type="text" 
                     name="search"
                     value="{{ request('search') }}"
                     placeholder="Cari Purchase Order" 
-                    class="pl-10 pr-10 py-2 w-59 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    class="pl-10 pr-10 py-2 w-full border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     id="searchInput"
                 >
                 <svg class="absolute left-3 top-2.5 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -32,11 +32,17 @@
                 @if(request('approval_status'))
                     <input type="hidden" name="approval_status" value="{{ request('approval_status') }}">
                 @endif
+                @if(request('toko'))
+                    <input type="hidden" name="toko" value="{{ request('toko') }}">
+                @endif
                 @if(request('start_date'))
                     <input type="hidden" name="start_date" value="{{ request('start_date') }}">
                 @endif
                 @if(request('end_date'))
                     <input type="hidden" name="end_date" value="{{ request('end_date') }}">
+                @endif
+                @if(request('supplier_id'))
+                    <input type="hidden" name="supplier_id" value="{{ request('supplier_id') }}">
                 @endif
                 @if(request('sales_id'))
                     <input type="hidden" name="sales_id" value="{{ request('sales_id') }}">
@@ -44,12 +50,109 @@
             </form>
         </div>
         
-        <a href="{{ route('sales-transaction.bulk-create') }}" class="btn-primary flex items-center space-x-2">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+        <button id="filterToggle" class="flex items-center space-x-2 px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors flex-shrink-0">
+            <svg id="filterIcon" class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.707A1 1 0 013 7V4z"></path>
             </svg>
-            <span>Buat PO</span>
-        </a>
+            <span id="filterText" class="text-sm font-medium text-gray-700">Filter</span>
+            <span id="activeFilterCount" class="hidden bg-blue-500 text-white text-xs rounded-full px-2 py-0.5 ml-1">0</span>
+        </button>
+    </div>
+
+    <!-- Filter Options (Hidden by default) -->
+    <div id="additionalFilterContainer" class="hidden">
+        <div class="bg-white rounded-lg shadow-lg border border-gray-200">
+            <!-- Tab Navigation -->
+            <div class="flex border-b border-gray-200">
+                <button onclick="switchFilterTab('toko')" id="tabToko" class="flex-1 px-4 py-3 text-sm font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-50 border-b-2 border-transparent transition-colors filter-tab active">
+                    <div class="flex items-center justify-center space-x-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                        </svg>
+                        <span>Toko</span>
+                    </div>
+                </button>
+                <button onclick="switchFilterTab('tanggal')" id="tabTanggal" class="flex-1 px-4 py-3 text-sm font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-50 border-b-2 border-transparent transition-colors filter-tab">
+                    <div class="flex items-center justify-center space-x-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                        </svg>
+                        <span>Tanggal</span>
+                    </div>
+                </button>
+                <button onclick="switchFilterTab('supplier')" id="tabSupplier" class="flex-1 px-4 py-3 text-sm font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-50 border-b-2 border-transparent transition-colors filter-tab">
+                    <div class="flex items-center justify-center space-x-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                        </svg>
+                        <span>Supplier</span>
+                    </div>
+                </button>
+            </div>
+            
+            <!-- Tab Content -->
+            <div class="p-4">
+                <!-- Toko Tab Content -->
+                <div id="contentToko" class="filter-tab-content">
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Pilih Toko</label>
+                            <select id="tokoFilter" class="w-full px-4 py-3 text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white">
+                                <option value="">Semua Toko</option>
+                                @if(isset($orderAccOptions))
+                                    @foreach($orderAccOptions as $toko)
+                                        <option value="{{ $toko->name }}" {{ request('toko') == $toko->name ? 'selected' : '' }}>{{ $toko->name }}</option>
+                                    @endforeach
+                                @endif
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Tanggal Tab Content -->
+                <div id="contentTanggal" class="filter-tab-content hidden">
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Tanggal Pengiriman Mulai</label>
+                            <input type="date" id="startDateFilter" class="w-full px-4 py-3 text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white" value="{{ request('start_date') }}">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Tanggal Pengiriman Akhir</label>
+                            <input type="date" id="endDateFilter" class="w-full px-4 py-3 text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white" value="{{ request('end_date') }}">
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Supplier Tab Content -->
+                <div id="contentSupplier" class="filter-tab-content hidden">
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Pilih Supplier</label>
+                            <select id="supplierFilter" class="w-full px-4 py-3 text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white">
+                                <option value="">Semua Supplier</option>
+                                @if(isset($supplierList) && $supplierList->count() > 0)
+                                    @foreach($supplierList as $supplier)
+                                        <option value="{{ $supplier->id }}" {{ request('supplier_id') == $supplier->id ? 'selected' : '' }}>{{ $supplier->nama_supplier }}</option>
+                                    @endforeach
+                                @else
+                                    <option value="" disabled>Data supplier tidak tersedia</option>
+                                @endif
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Filter Actions -->
+            <div class="flex space-x-3 p-4 bg-gray-50 border-t border-gray-200">
+                <button onclick="clearFilters()" class="flex-1 px-4 py-3 text-base font-medium text-gray-700 bg-white hover:bg-gray-50 border border-gray-300 rounded-lg transition-colors">
+                    Reset
+                </button>
+                <button onclick="applyAdditionalFilters()" class="flex-1 px-4 py-3 text-base font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors">
+                    Terapkan
+                </button>
+            </div>
+        </div>
     </div>
 
     <!-- Status Filter -->
@@ -89,8 +192,169 @@
     <div id="end-of-results" class="text-center py-4 hidden">
         <p class="text-gray-500 text-sm">No more PO to load</p>
     </div>
+
+    <!-- Floating Action Button -->
+    <a href="{{ route('sales-transaction.bulk-create') }}" class="fixed bottom-20 right-4 w-14 h-14 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center z-50">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+        </svg>
+    </a>
 </div>
 
+<style>
+/* Prevent scroll when loading */
+body.loading {
+    overflow: hidden;
+}
+
+/* Filter active state */
+.filter-active {
+    background-color: #3b82f6 !important;
+    color: white !important;
+}
+
+.filter-active svg {
+    color: white !important;
+}
+
+.filter-active #filterText {
+    color: white !important;
+}
+
+/* Tab Navigation Styles */
+.filter-tab {
+    position: relative;
+    cursor: pointer;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.filter-tab:hover {
+    background-color: #f8fafc;
+}
+
+.filter-tab.active {
+    color: #3b82f6 !important;
+    border-bottom-color: #3b82f6 !important;
+    background-color: #f8fafc;
+}
+
+.filter-tab.active svg {
+    color: #3b82f6 !important;
+}
+
+/* Ensure tab buttons are clickable */
+.filter-tab {
+    pointer-events: auto;
+    cursor: pointer;
+}
+
+.filter-tab * {
+    pointer-events: auto;
+}
+
+/* Make sure tab content is clickable */
+.filter-tab-content {
+    pointer-events: auto;
+    animation: fadeIn 0.2s ease-in-out;
+}
+
+/* Filter container animations */
+#additionalFilterContainer {
+    transition: all 0.3s ease-in-out;
+}
+
+#additionalFilterContainer.hidden {
+    opacity: 0;
+    transform: translateY(-10px);
+    pointer-events: none;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Mobile-optimized filter styles */
+@media (max-width: 768px) {
+    #additionalFilterContainer {
+        margin: 0 -1rem;
+        border-radius: 0;
+    }
+    
+    #additionalFilterContainer .bg-gray-50 {
+        border-radius: 0;
+        padding: 1rem;
+    }
+    
+    /* Larger touch targets for mobile */
+    #additionalFilterContainer select,
+    #additionalFilterContainer input[type="date"] {
+        min-height: 48px;
+        font-size: 16px; /* Prevents zoom on iOS */
+    }
+    
+    #additionalFilterContainer button {
+        min-height: 48px;
+        font-size: 16px;
+    }
+    
+    /* Better spacing for mobile */
+    #additionalFilterContainer .space-y-4 > * + * {
+        margin-top: 1rem;
+    }
+    
+    /* Mobile tab optimization */
+    .filter-tab {
+        min-height: 48px;
+        padding: 12px 16px;
+        font-size: 14px;
+        -webkit-tap-highlight-color: rgba(0, 0, 0, 0.1);
+    }
+    
+    .filter-tab:active {
+        background-color: #e5e7eb;
+        transform: scale(0.98);
+    }
+}
+
+/* Ensure date inputs are clickable */
+input[type="date"] {
+    cursor: pointer;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator {
+    cursor: pointer;
+    padding: 4px;
+    margin-left: 4px;
+}
+
+
+/* Skeleton loading styles */
+.skeleton-item {
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: loading 1.5s infinite;
+}
+
+@keyframes loading {
+    0% {
+        background-position: 200% 0;
+    }
+    100% {
+        background-position: -200% 0;
+    }
+}
+</style>
 
 <script>
 let currentPage = 1;
@@ -142,6 +406,8 @@ function loadMorePO() {
     let skeletonId = null;
     if (hasMorePages) {
         loadingIndicator.classList.remove('hidden');
+        // Prevent scroll during infinite scroll loading
+        preventScroll();
         skeletonId = showInfiniteScrollSkeleton();
     }
     
@@ -151,7 +417,7 @@ function loadMorePO() {
     
     // Add any existing filter parameters
     const urlParams = new URLSearchParams(window.location.search);
-    ['start_date', 'end_date', 'sales_id', 'approval_status', 'search'].forEach(param => {
+    ['start_date', 'end_date', 'sales_id', 'approval_status', 'search', 'toko', 'supplier_id'].forEach(param => {
         if (urlParams.get(param)) {
             params.append(param, urlParams.get(param));
         }
@@ -211,18 +477,30 @@ function loadMorePO() {
     .finally(() => {
         isLoading = false;
         loadingIndicator.classList.add('hidden');
+        enableScroll();
     });
-    }, 2000); // 2-second delay
+    }, 500); // 500ms delay
 }
 
 // Filter function
 function filterByStatus(status) {
     const url = new URL('{{ route("sales-transaction.index") }}', window.location.origin);
+    
+    // Preserve existing filter parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    ['search', 'toko', 'start_date', 'end_date', 'supplier_id'].forEach(param => {
+        if (urlParams.get(param)) {
+            url.searchParams.set(param, urlParams.get(param));
+        }
+    });
+    
+    // Set or remove approval status
     if (status) {
         url.searchParams.set('approval_status', status);
     } else {
         url.searchParams.delete('approval_status');
     }
+    
     window.location.href = url.toString();
 }
 
@@ -322,6 +600,16 @@ function showInfiniteScrollSkeleton() {
     return skeletonId;
 }
 
+// Prevent scroll during loading
+function preventScroll() {
+    document.body.classList.add('loading');
+}
+
+// Enable scroll after loading
+function enableScroll() {
+    document.body.classList.remove('loading');
+}
+
 // Initial skeleton loading functions
 function showInitialSkeletonLoading() {
     const container = document.getElementById('transactions-container');
@@ -329,6 +617,9 @@ function showInitialSkeletonLoading() {
         // Store the original content
         const originalContent = container.innerHTML;
         container.setAttribute('data-original-content', originalContent);
+        
+        // Prevent scroll during loading
+        preventScroll();
         
         // Show skeleton loading
         container.innerHTML = `
@@ -381,6 +672,8 @@ function hideInitialSkeletonLoading() {
             container.removeAttribute('data-original-content');
         }
     }
+    // Enable scroll after loading
+    enableScroll();
 }
 
 
@@ -412,7 +705,8 @@ function performSearch() {
     loadingIndicator.classList.remove('hidden');
     endOfResults.classList.add('hidden');
     
-    // Show skeleton loading
+    // Prevent scroll and show skeleton loading
+    preventScroll();
     showSkeletonLoading();
     
     // Get current filter parameters
@@ -422,7 +716,7 @@ function performSearch() {
     
     // Add any existing filter parameters
     const urlParams = new URLSearchParams(window.location.search);
-    ['approval_status', 'start_date', 'end_date', 'sales_id'].forEach(param => {
+    ['approval_status', 'start_date', 'end_date', 'sales_id', 'toko', 'supplier_id'].forEach(param => {
         if (urlParams.get(param)) {
             params.append(param, urlParams.get(param));
         }
@@ -430,7 +724,7 @@ function performSearch() {
     
     const url = `{{ route('sales-transaction.load-more') }}?${params.toString()}`;
     
-    // Add 2-second delay to see skeleton loading
+    // Add short delay to show loading overlay
     setTimeout(() => {
         fetch(url, {
             method: 'GET',
@@ -492,8 +786,9 @@ function performSearch() {
     .finally(() => {
         isSearching = false;
         loadingIndicator.classList.add('hidden');
+        enableScroll();
     });
-    }, 2000); // 2-second delay
+    }, 500); // 500ms delay
 }
 
 // Auto-submit search form on Enter key and auto-search on input
@@ -547,6 +842,236 @@ document.addEventListener('DOMContentLoaded', function() {
     }, 2000); // Wait for skeleton to be hidden first
     
     initInfiniteScroll();
+    
+    // Filter functionality
+    const filterToggle = document.getElementById('filterToggle');
+    const additionalFilterContainer = document.getElementById('additionalFilterContainer');
+    const tokoFilter = document.getElementById('tokoFilter');
+    const startDateFilter = document.getElementById('startDateFilter');
+    const endDateFilter = document.getElementById('endDateFilter');
+    const supplierFilter = document.getElementById('supplierFilter');
+
+    // Toggle additional filter visibility
+    function toggleAdditionalFilter() {
+        additionalFilterContainer.classList.toggle('hidden');
+        updateFilterStatus();
+    }
+    
+    // Close filter form with animation
+    function closeFilterForm() {
+        if (additionalFilterContainer && !additionalFilterContainer.classList.contains('hidden')) {
+            additionalFilterContainer.classList.add('hidden');
+        }
+    }
+
+    // Update filter button status based on active filters
+    function updateFilterStatus() {
+        const filterToggle = document.getElementById('filterToggle');
+        const filterIcon = document.getElementById('filterIcon');
+        const filterText = document.getElementById('filterText');
+        const activeFilterCount = document.getElementById('activeFilterCount');
+        
+        let activeCount = 0;
+        
+        // Check if any filters are active
+        if (tokoFilter && tokoFilter.value) activeCount++;
+        if (startDateFilter && startDateFilter.value) activeCount++;
+        if (endDateFilter && endDateFilter.value) activeCount++;
+        if (supplierFilter && supplierFilter.value) activeCount++;
+        
+        if (activeCount > 0) {
+            filterToggle.classList.add('filter-active');
+            filterText.textContent = 'Filtered';
+            activeFilterCount.textContent = activeCount;
+            activeFilterCount.classList.remove('hidden');
+        } else {
+            filterToggle.classList.remove('filter-active');
+            filterText.textContent = 'Filter';
+            activeFilterCount.classList.add('hidden');
+        }
+    }
+
+    // Switch filter tab
+    function switchFilterTab(tabName) {
+        // Remove active class from all tabs
+        document.querySelectorAll('.filter-tab').forEach(tab => {
+            tab.classList.remove('active');
+        });
+        
+        // Hide all tab contents
+        document.querySelectorAll('.filter-tab-content').forEach(content => {
+            content.classList.add('hidden');
+        });
+        
+        // Show selected tab content
+        const selectedTab = document.getElementById(`tab${tabName.charAt(0).toUpperCase() + tabName.slice(1)}`);
+        const selectedContent = document.getElementById(`content${tabName.charAt(0).toUpperCase() + tabName.slice(1)}`);
+        
+        if (selectedTab && selectedContent) {
+            selectedTab.classList.add('active');
+            selectedContent.classList.remove('hidden');
+        }
+    }
+
+    // Apply additional filters
+    function applyAdditionalFilters() {
+        // Close filter form first
+        closeFilterForm();
+        
+        // Prevent scroll before redirect
+        preventScroll();
+        
+        const url = new URL('{{ route("sales-transaction.index") }}', window.location.origin);
+        
+        // Preserve existing search and approval status
+        const urlParams = new URLSearchParams(window.location.search);
+        ['search', 'approval_status'].forEach(param => {
+            if (urlParams.get(param)) {
+                url.searchParams.set(param, urlParams.get(param));
+            }
+        });
+        
+        // Add new filter values
+        if (tokoFilter && tokoFilter.value) {
+            url.searchParams.set('toko', tokoFilter.value);
+        }
+        if (startDateFilter && startDateFilter.value) {
+            url.searchParams.set('start_date', startDateFilter.value);
+        }
+        if (endDateFilter && endDateFilter.value) {
+            url.searchParams.set('end_date', endDateFilter.value);
+        }
+        if (supplierFilter && supplierFilter.value) {
+            url.searchParams.set('supplier_id', supplierFilter.value);
+        }
+        
+        // Small delay before redirect
+        setTimeout(() => {
+            window.location.href = url.toString();
+        }, 100);
+    }
+
+    // Clear all filters
+    function clearFilters() {
+        // Close filter form first
+        closeFilterForm();
+        
+        // Get fresh references to filter elements
+        const tokoFilterEl = document.getElementById('tokoFilter');
+        const startDateFilterEl = document.getElementById('startDateFilter');
+        const endDateFilterEl = document.getElementById('endDateFilter');
+        const supplierFilterEl = document.getElementById('supplierFilter');
+        
+        // Clear all filter values
+        if (tokoFilterEl) {
+            tokoFilterEl.value = '';
+        }
+        
+        if (startDateFilterEl) {
+            startDateFilterEl.value = '';
+        }
+        
+        if (endDateFilterEl) {
+            endDateFilterEl.value = '';
+        }
+        
+        if (supplierFilterEl) {
+            supplierFilterEl.value = '';
+        }
+        
+        // Update filter status
+        updateFilterStatus();
+        
+        // Redirect to clean URL
+        const url = new URL('{{ route("sales-transaction.index") }}', window.location.origin);
+        
+        // Preserve existing search and approval status
+        const urlParams = new URLSearchParams(window.location.search);
+        ['search', 'approval_status'].forEach(param => {
+            if (urlParams.get(param)) {
+                url.searchParams.set(param, urlParams.get(param));
+            }
+        });
+        
+        window.location.href = url.toString();
+    }
+    
+    // Make functions globally accessible
+    window.clearFilters = clearFilters;
+    window.applyAdditionalFilters = applyAdditionalFilters;
+
+    // Event listeners
+    if (filterToggle) {
+        filterToggle.addEventListener('click', toggleAdditionalFilter);
+    }
+
+    if (tokoFilter) {
+        tokoFilter.addEventListener('change', updateFilterStatus);
+    }
+
+    if (startDateFilter) {
+        startDateFilter.addEventListener('change', updateFilterStatus);
+    }
+
+    if (endDateFilter) {
+        endDateFilter.addEventListener('change', updateFilterStatus);
+    }
+
+    if (supplierFilter) {
+        supplierFilter.addEventListener('change', updateFilterStatus);
+    }
+
+    // Initialize filter status on page load
+    updateFilterStatus();
+    
+    // Add event listener for reset button as backup
+    const resetButton = document.querySelector('button[onclick="clearFilters()"]');
+    if (resetButton) {
+        resetButton.addEventListener('click', function(e) {
+            e.preventDefault();
+            clearFilters();
+        });
+    }
+    
+    // Add event listener for apply button as backup
+    const applyButton = document.querySelector('button[onclick="applyAdditionalFilters()"]');
+    if (applyButton) {
+        applyButton.addEventListener('click', function(e) {
+            e.preventDefault();
+            applyAdditionalFilters();
+        });
+    }
+    
+    // Add click event listeners for tabs as backup
+    const tabToko = document.getElementById('tabToko');
+    const tabTanggal = document.getElementById('tabTanggal');
+    const tabSupplier = document.getElementById('tabSupplier');
+    
+    if (tabToko) {
+        tabToko.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            switchFilterTab('toko');
+        });
+    }
+    
+    if (tabTanggal) {
+        tabTanggal.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            switchFilterTab('tanggal');
+        });
+    }
+    
+    if (tabSupplier) {
+        tabSupplier.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            switchFilterTab('supplier');
+        });
+    }
+    
 });
 </script>
+
 @endsection

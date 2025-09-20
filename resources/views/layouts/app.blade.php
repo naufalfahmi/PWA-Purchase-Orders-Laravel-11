@@ -429,6 +429,33 @@
             }
         }
     </script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(registration => {
+                        console.log('✅ ServiceWorker registered: ', registration.scope);
+
+                        // Optional: auto detect update
+                        registration.onupdatefound = () => {
+                            const installingWorker = registration.installing;
+                            installingWorker.onstatechange = () => {
+                                if (installingWorker.state === 'installed') {
+                                    if (navigator.serviceWorker.controller) {
+                                        console.log('♻️ New ServiceWorker available, refresh to update.');
+                                    } else {
+                                        console.log('🎉 ServiceWorker ready for offline use.');
+                                    }
+                                }
+                            };
+                        };
+                    })
+                    .catch(error => {
+                        console.error('❌ ServiceWorker registration failed:', error);
+                    });
+            });
+        }
+    </script>
 
     @if($errors->any())
         <div class="fixed top-4 right-4 bg-red-500 text-white px-4 py-2 rounded-lg shadow-lg z-50" id="error-message">

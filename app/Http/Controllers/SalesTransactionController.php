@@ -17,7 +17,11 @@ class SalesTransactionController extends Controller
      */
     private function generateTransactionNumber()
     {
-        return 'ST-' . date('Ymd') . '-' . Str::upper(Str::random(6));
+        do {
+            $transactionNumber = 'ST-' . date('Ymd') . '-' . Str::upper(Str::random(6));
+        } while (SalesTransaction::where('transaction_number', $transactionNumber)->exists());
+        
+        return $transactionNumber;
     }
 
     public function index(Request $request)
@@ -66,6 +70,16 @@ class SalesTransactionController extends Controller
         if ($request->filled('sales_id')) {
             $query->where('sales_id', $request->sales_id);
         }
+        
+        // Filter berdasarkan toko (order_acc_by)
+        if ($request->filled('toko')) {
+            $query->where('order_acc_by', $request->toko);
+        }
+        
+        // Filter berdasarkan supplier
+        if ($request->filled('supplier_id')) {
+            $query->where('supplier_id', $request->supplier_id);
+        }
 
         // Filter berdasarkan approval status
         if ($request->filled('approval_status')) {
@@ -102,7 +116,25 @@ class SalesTransactionController extends Controller
             'is_sales' => auth()->user()->isSales() ?? false
         ]);
 
-        return view('sales-transaction.index', compact('poList', 'products', 'salesList'));
+        // Get order acc options for toko filter
+        $orderAccOptions = DB::table('order_acc_options')->where('is_active', true)->get();
+        
+        // Get suppliers for supplier filter
+        $supplierList = Supplier::all(); // Get all suppliers first for debugging
+        
+        // Debug: Log supplier count
+        \Log::info('Total suppliers: ' . $supplierList->count());
+        \Log::info('Active suppliers: ' . Supplier::active()->count());
+        
+        if ($supplierList->count() > 0) {
+            \Log::info('First supplier: ' . $supplierList->first()->nama_supplier);
+            \Log::info('First supplier active: ' . ($supplierList->first()->is_active ? 'Yes' : 'No'));
+        }
+        
+        // Use all suppliers for now (we'll filter by active later)
+        $supplierList = Supplier::all();
+
+        return view('sales-transaction.index', compact('poList', 'products', 'salesList', 'orderAccOptions', 'supplierList'));
     }
 
     /**
@@ -180,6 +212,7 @@ class SalesTransactionController extends Controller
             'transaction_date' => 'required|date',
             'delivery_date' => 'nullable|date|after_or_equal:transaction_date',
             'sales_id' => 'required|exists:sales,id',
+            'supplier_id' => 'required|exists:suppliers,id',
             'po_number' => 'nullable|string|max:255',
             'general_notes' => 'nullable|string',
             'order_acc_by' => 'nullable|string',
@@ -192,6 +225,14 @@ class SalesTransactionController extends Controller
             'products.*.unit_price' => 'required|numeric|min:0',
             'products.*.notes' => 'nullable|string',
         ]);
+
+        // Validate that all products belong to the same supplier
+        $mainSupplierId = $validated['supplier_id'];
+        foreach ($validated['products'] as $product) {
+            if ($product['supplier_id'] != $mainSupplierId) {
+                return back()->withErrors(['products' => 'Semua produk harus dari supplier yang sama.'])->withInput();
+            }
+        }
 
         // Validate that at least one product has quantity > 0
         $hasValidProduct = false;
@@ -408,11 +449,13 @@ class SalesTransactionController extends Controller
             'products.*.notes' => 'nullable|string',
         ]);
 
+        // Generate new unique transaction number for the updated PO
+        $transactionNumber = $this->generateTransactionNumber();
+
         // Delete old items for this PO and re-insert based on submitted items
         SalesTransaction::where('po_number', $poNumber)->delete();
 
         $transactions = [];
-        $transactionNumber = $this->generateTransactionNumber();
 
         foreach ($validated['products'] as $productData) {
             if (($productData['quantity_type'] === 'carton' && ($productData['quantity_carton'] ?? 0) == 0) || 
@@ -507,6 +550,16 @@ class SalesTransactionController extends Controller
 
         if ($request->filled('sales_id')) {
             $query->where('sales_id', $request->sales_id);
+        }
+        
+        // Filter berdasarkan toko (order_acc_by)
+        if ($request->filled('toko')) {
+            $query->where('order_acc_by', $request->toko);
+        }
+        
+        // Filter berdasarkan supplier
+        if ($request->filled('supplier_id')) {
+            $query->where('supplier_id', $request->supplier_id);
         }
 
         if ($request->filled('approval_status')) {
