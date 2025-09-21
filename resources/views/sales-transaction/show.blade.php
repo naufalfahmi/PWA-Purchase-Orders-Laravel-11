@@ -112,7 +112,7 @@
             </div>
         </div>
 
-        @if(Auth::user()->isOwner() && $transactions->first()->isPending())
+        @if(Auth::user()->isOwner())
             <div class="card p-6">
                 <div class="text-center mb-6">
                     <h3 class="text-xl font-semibold text-gray-900 mb-2">Persetujuan Purchase Order</h3>
@@ -155,20 +155,26 @@
                         </div>
                     </div>
                     
-                    <div class="flex space-x-4">
-                        <button type="button" onclick="submitApproval('reject')" class="flex-1 bg-red-600 hover:bg-red-700 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center">
-                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                            </svg>
-                            Tolak PO
-                        </button>
-                        <button type="button" onclick="submitApproval('approve')" class="flex-1 bg-green-600 hover:bg-green-700 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center">
-                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                            </svg>
-                            Setujui PO
-                        </button>
-                    </div>
+                    @if($transactions->first()->isPending())
+                        <div class="flex space-x-4">
+                            <button type="button" onclick="submitApproval('reject')" style="background-color: #dc2626 !important; color: white !important; font-weight: 500 !important; padding: 12px 16px !important; border-radius: 8px !important; border: none !important; flex: 1 !important; display: flex !important; align-items: center !important; justify-content: center !important; transition: all 0.2s !important; cursor: pointer !important;" onmouseover="this.style.backgroundColor='#b91c1c'" onmouseout="this.style.backgroundColor='#dc2626'">
+                                <svg style="width: 20px; height: 20px; margin-right: 8px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                </svg>
+                                Tolak PO
+                            </button>
+                            <button type="button" onclick="submitApproval('approve')" style="background-color: #16a34a !important; color: white !important; font-weight: 500 !important; padding: 12px 16px !important; border-radius: 8px !important; border: none !important; flex: 1 !important; display: flex !important; align-items: center !important; justify-content: center !important; transition: all 0.2s !important; cursor: pointer !important;" onmouseover="this.style.backgroundColor='#15803d'" onmouseout="this.style.backgroundColor='#16a34a'">
+                                <svg style="width: 20px; height: 20px; margin-right: 8px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                </svg>
+                                Setujui PO
+                            </button>
+                        </div>
+                    @else
+                        <div class="text-center p-4 bg-gray-100 rounded-lg">
+                            <p class="text-gray-600">PO ini sudah {{ $transactions->first()->approval_status === 'approved' ? 'disetujui' : 'ditolak' }}</p>
+                        </div>
+                    @endif
                 </form>
             </div>
         @else
