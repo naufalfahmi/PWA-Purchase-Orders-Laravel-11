@@ -363,7 +363,7 @@
     </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+<script src="{{ asset('libs/chart.min.js') }}"></script>
 
 <script>
 // Loading skeleton control
@@ -870,10 +870,10 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 
 <!-- jQuery and Select2 CSS/JS -->
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
-<link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script src="{{ asset('libs/jquery-3.6.0.min.js') }}"></script>
+<link href="{{ asset('libs/select2.min.css') }}" rel="stylesheet">
+<link href="{{ asset('libs/select2-bootstrap-5-theme.min.css') }}" rel="stylesheet">
+<script src="{{ asset('libs/select2.min.js') }}"></script>
 
 <script>
 // Wait for jQuery and Select2 to be loaded

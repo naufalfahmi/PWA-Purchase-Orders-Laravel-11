@@ -18,6 +18,9 @@
     
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     
+    <!-- Local Fonts -->
+    <link rel="stylesheet" href="{{ asset('css/inter-fonts.css') }}">
+    
     <!-- Fallback CSS untuk mobile -->
     <link rel="stylesheet" href="{{ asset('css/mobile-fallback.css') }}" media="screen and (max-width: 768px)">
     
@@ -469,6 +472,30 @@
             }, 5000);
         </script>
     @endif
+
+    {{-- Inline Fallback Script - Critical CSS and offline handling --}}
+    <script src="{{ asset('js/inline-fallback.js') }}"></script>
+    
+    {{-- Register Service Worker with Fallback --}}
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw-simple.js')
+                    .then(registration => {
+                        // Service Worker registered successfully
+                        console.log('SW registered:', registration.scope);
+                    })
+                    .catch(error => {
+                        // Service Worker failed, use fallback
+                        console.log('SW failed, using fallback');
+                        window.fallbackMode = true;
+                    });
+            });
+        } else {
+            // No Service Worker support, use fallback
+            window.fallbackMode = true;
+        }
+    </script>
 
     {{-- View-level pushed scripts (e.g., Select2) --}}
     @stack('scripts')

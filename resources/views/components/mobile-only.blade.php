@@ -27,7 +27,7 @@ $isMobile = request()->header('User-Agent') &&
         <!-- QR Code -->
         <div class="bg-gray-100 rounded-lg p-4 mb-6">
             <div id="qrcode-component" class="w-32 h-32 bg-white rounded border border-gray-200 mx-auto flex items-center justify-center">
-                <img id="qrcode-component-img" alt="QR Code" src="https://api.qrserver.com/v1/create-qr-code/?size=128x128&data={{ urlencode(route('login').'?force_mobile=1') }}">
+                <img id="qrcode-component-img" alt="QR Code" src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTI4IiBoZWlnaHQ9IjEyOCIgdmlld0JveD0iMCAwIDEyOCAxMjgiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIxMjgiIGhlaWdodD0iMTI4IiBmaWxsPSIjZjlmOWY5Ii8+Cjx0ZXh0IHg9IjY0IiB5PSI2NCIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjEwIiBmaWxsPSIjNjY2IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjNlbSI+TG9hZGluZy4uLjwvdGV4dD4KPC9zdmc+">
             </div>
             <p class="text-xs text-gray-500 mt-2">Scan untuk akses mobile</p>
         </div>
@@ -71,7 +71,7 @@ $isMobile = request()->header('User-Agent') &&
 (function() {
     if (!window.QRCode) {
         var s = document.createElement('script');
-        s.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
+        s.src = '/libs/qrcode.min.js';
         s.async = true;
         s.onload = generateQr;
         document.head.appendChild(s);

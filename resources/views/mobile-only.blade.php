@@ -5,9 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mobile Only - Admin PWA</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" integrity="sha512-J7q8g8Kp1bW8F0h2mE1sH2L3+5QxgYkz3N0K0m0+5t4S5bXo3qkQqfXq5Q9H7Yv2s1mJ9wZC7w0WcEwQyQ4v6g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="{{ asset('js/qr-generator.js') }}"></script>
+    <link rel="stylesheet" href="{{ asset('css/inter-fonts.css') }}">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
         body { font-family: 'Inter', system-ui, sans-serif; }
     </style>
 </head>
@@ -32,7 +32,7 @@
             <!-- QR Code -->
             <div class="bg-gray-100 rounded-lg p-4 mb-6">
                 <div id="qrcode" class="w-32 h-32 bg-white rounded border border-gray-200 mx-auto flex items-center justify-center">
-                    <img id="qrcode-img" alt="QR Code" src="https://api.qrserver.com/v1/create-qr-code/?size=128x128&data={{ urlencode(route('login').'?force_mobile=1') }}">
+                    <img id="qrcode-img" alt="QR Code" src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTI4IiBoZWlnaHQ9IjEyOCIgdmlld0JveD0iMCAwIDEyOCAxMjgiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIxMjgiIGhlaWdodD0iMTI4IiBmaWxsPSIjZjlmOWY5Ii8+Cjx0ZXh0IHg9IjY0IiB5PSI2NCIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjEwIiBmaWxsPSIjNjY2IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjNlbSI+TG9hZGluZy4uLjwvdGV4dD4KPC9zdmc+">
                 </div>
                 <p class="text-xs text-gray-500 mt-2">Scan untuk akses mobile</p>
             </div>
@@ -105,12 +105,28 @@
 
         // Generate QR Code for login URL (force mobile)
         document.addEventListener('DOMContentLoaded', function() {
+            var loginUrl = '{{ route("login") }}?force_mobile=1';
+            
+            // Try local QR generator first
+            if (window.generateQRCodeImg) {
+                window.generateQRCodeImg('qrcode-img', loginUrl, {
+                    width: 128,
+                    height: 128
+                }).catch(function(error) {
+                    console.log('Local QR generator failed, trying fallback');
+                    generateQRFallback(loginUrl);
+                });
+            } else {
+                generateQRFallback(loginUrl);
+            }
+        });
+
+        function generateQRFallback(loginUrl) {
             try {
                 var qrContainer = document.getElementById('qrcode');
                 var qrImg = document.getElementById('qrcode-img');
+                
                 if (qrContainer && window.QRCode) {
-                    // Use absolute login URL with force_mobile=1
-                    var loginUrl = '{{ route("login") }}?force_mobile=1';
                     new QRCode(qrContainer, {
                         text: loginUrl,
                         width: 128,
@@ -118,11 +134,17 @@
                         correctLevel: QRCode.CorrectLevel.M
                     });
                     if (qrImg) { qrImg.style.display = 'none'; }
+                } else {
+                    // Ultimate fallback - show text
+                    if (qrImg) {
+                        qrImg.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTI4IiBoZWlnaHQ9IjEyOCIgdmlld0JveD0iMCAwIDEyOCAxMjgiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIxMjgiIGhlaWdodD0iMTI4IiBmaWxsPSIjZjlmOWY5Ii8+Cjx0ZXh0IHg9IjY0IiB5PSI2NCIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjEwIiBmaWxsPSIjNjY2IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjNlbSI+VXNlIGxpbms8L3RleHQ+Cjx0ZXh0IHg9IjY0IiB5PSI4MCIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjgiIGZpbGw9IiM5OTkiIHRleHQtYW5jaG9yPSJtaWRkbGUiPmJlbG93PC90ZXh0Pgo8L3N2Zz4=';
+                        qrImg.alt = 'QR Code Unavailable';
+                    }
                 }
             } catch (e) {
                 console.error('QR generation failed', e);
             }
-        });
+        }
     </script>
 </body>
 </html>
