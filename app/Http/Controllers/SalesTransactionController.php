@@ -208,6 +208,12 @@ class SalesTransactionController extends Controller
      */
     public function bulkStore(Request $request)
     {
+        // Check if this is an API request (for offline sync)
+        if ($request->wantsJson() || $request->is('api/*')) {
+            return $this->handleOfflineSync($request, auth()->id());
+        }
+        
+        // Original bulk store logic for web forms
         $validated = $request->validate([
             'transaction_date' => 'required|date',
             'delivery_date' => 'nullable|date|after_or_equal:transaction_date',
@@ -611,6 +617,283 @@ class SalesTransactionController extends Controller
         }
 
         return view('sales-transaction.index', compact('poList'));
+    }
+
+    /**
+     * Handle offline sync data - Same logic as bulkStore
+     */
+    private function handleOfflineSync(Request $request, $userId = null)
+    {
+        try {
+            $data = $request->all();
+            $userId = $userId ?? auth()->id();
+            
+            // Log received data for debugging
+            \Log::info('Offline Sync - Received Data', [
+                'raw_data' => $data,
+                'user_id' => $userId
+            ]);
+            
+            // Use database transaction to prevent race conditions
+            return \DB::transaction(function () use ($data, $userId) {
+            
+            // Determine PO number (do not early return; we allow multiple rows per PO)
+            $poNumber = $data['po_number'] ?? 'PO-' . now()->format('Ymd') . '-' . rand(1000, 9999);
+            
+            // Ensure sales record exists
+            $salesId = Sales::where('id', $userId)->value('id');
+            if (!$salesId) {
+                $user = auth()->user();
+                if (!$user && $userId) {
+                    $user = \App\Models\User::find($userId);
+                }
+                $sales = Sales::create([
+                    'id' => $userId,
+                    'name' => $user ? $user->name : 'Offline User',
+                    'email' => $user ? $user->email : 'offline@example.com',
+                    'phone' => $user ? ($user->phone ?? '') : '',
+                    'status' => 'active'
+                ]);
+                $salesId = $sales->id;
+            }
+            
+            // Convert offline sync data to products array format (same as bulkStore)
+            $products = [];
+            // Case 1: Newer offline format: products is an array of objects
+            if (isset($data['products']) && is_array($data['products'])) {
+                foreach ($data['products'] as $p) {
+                    if (!is_array($p)) { continue; }
+                    $products[] = [
+                        'supplier_id' => intval($p['supplier_id'] ?? $data['supplier_id'] ?? 1),
+                        'product_id' => intval($p['product_id'] ?? 0),
+                        'quantity_carton' => intval($p['quantity_carton'] ?? 0),
+                        'quantity_piece' => intval($p['quantity_piece'] ?? 0),
+                        'quantity_type' => $p['quantity_type'] ?? 'piece',
+                        'unit_price' => floatval($p['unit_price'] ?? 0),
+                        'notes' => $p['notes'] ?? null,
+                    ];
+                }
+            }
+            // Case 2: Legacy bracketed multi-item format: products[0][field], products[1][field], ...
+            elseif ($this->hasBracketedProducts($data)) {
+                $indexes = $this->extractBracketedProductIndexes($data);
+                foreach ($indexes as $idx) {
+                    $products[] = [
+                        'supplier_id' => intval($data["products[$idx][supplier_id]"] ?? $data['supplier_id'] ?? 1),
+                        'product_id' => intval($data["products[$idx][product_id]"] ?? 0),
+                        'quantity_carton' => intval($data["products[$idx][quantity_carton]"] ?? 0),
+                        'quantity_piece' => intval($data["products[$idx][quantity_piece]"] ?? 0),
+                        'quantity_type' => $data["products[$idx][quantity_type]"] ?? 'piece',
+                        'unit_price' => floatval($data["products[$idx][unit_price]"] ?? 0),
+                        'notes' => $data["products[$idx][notes]"] ?? null,
+                    ];
+                }
+            } else {
+                // Direct data format
+                $products[] = [
+                    'supplier_id' => intval($data['supplier_id'] ?? 1),
+                    'product_id' => intval($data['product_id'] ?? 1),
+                    'quantity_carton' => intval($data['quantity_carton'] ?? 0),
+                    'quantity_piece' => intval($data['quantity_piece'] ?? 0),
+                    'quantity_type' => $data['quantity_type'] ?? 'piece',
+                    'unit_price' => floatval($data['unit_price'] ?? 0),
+                    'notes' => $data['notes'] ?? null,
+                ];
+            }
+            
+            // Use same validation and logic as bulkStore
+            $mainSupplierId = $products[0]['supplier_id'];
+
+            \Log::info('Offline Sync - Parsed Products', [
+                'po_number' => $poNumber,
+                'products_count' => count($products),
+                'products' => $products,
+            ]);
+            
+            // Validate that at least one product has quantity > 0 (regardless of type)
+            $hasValidProduct = false;
+            foreach ($products as $product) {
+                if ((intval($product['quantity_carton']) > 0) || (intval($product['quantity_piece']) > 0)) {
+                    $hasValidProduct = true;
+                    break;
+                }
+            }
+
+            if (!$hasValidProduct) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Minimal harus ada 1 produk dengan quantity > 0.'
+                ], 400);
+            }
+
+            $transactions = [];
+            // Fetch existing product_ids for this PO to avoid duplicates on re-sync
+            $existingProductIds = SalesTransaction::where('po_number', $poNumber)->pluck('product_id')->toArray();
+            $transactionNumber = $this->generateTransactionNumber();
+
+            foreach ($products as $productData) {
+                // Skip if already inserted for this PO
+                if (in_array($productData['product_id'], $existingProductIds, true)) {
+                    \Log::info('Offline Sync - Skip existing product for PO', [
+                        'po_number' => $poNumber,
+                        'product_id' => $productData['product_id']
+                    ]);
+                    continue;
+                }
+
+                $product = Product::find($productData['product_id']);
+                $quantityPerCarton = $product ? intval($product->quantity_per_carton) : intval($productData['quantity_per_carton'] ?? 1);
+                if ($quantityPerCarton <= 0) { $quantityPerCarton = 1; }
+
+                $quantityCarton = intval($productData['quantity_carton']);
+                $quantityPiece = intval($productData['quantity_piece']);
+                $totalQuantityPiece = ($quantityCarton * $quantityPerCarton) + $quantityPiece;
+
+                // Skip if total is zero
+                if ($totalQuantityPiece <= 0) {
+                    \Log::info('Offline Sync - Skip zero quantity item', [
+                        'po_number' => $poNumber,
+                        'product_id' => $productData['product_id'],
+                        'quantity_carton' => $quantityCarton,
+                        'quantity_piece' => $quantityPiece,
+                        'quantity_per_carton' => $quantityPerCarton
+                    ]);
+                    continue;
+                }
+
+                $unitPrice = floatval($productData['unit_price']);
+                $totalAmount = $totalQuantityPiece * $unitPrice;
+
+                $transactions[] = [
+                    'transaction_number' => $transactionNumber,
+                    'transaction_date' => $data['transaction_date'] ?? now()->format('Y-m-d'),
+                    'delivery_date' => $data['delivery_date'] ?? now()->addDays(7)->format('Y-m-d'),
+                    'product_id' => $productData['product_id'],
+                    'sales_id' => $salesId,
+                    'supplier_id' => $productData['supplier_id'],
+                    'quantity_carton' => $quantityCarton,
+                    'quantity_piece' => $quantityPiece,
+                    'total_quantity_piece' => $totalQuantityPiece,
+                    'unit_price' => $productData['unit_price'],
+                    'total_amount' => $totalAmount,
+                    'notes' => $productData['notes'] ?? null,
+                    'general_notes' => $data['general_notes'] ?? null,
+                    'order_acc_by' => $data['order_acc_by'] ?? 'DIFA',
+                    'po_number' => $poNumber,
+                    'approval_status' => 'pending',
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ];
+            }
+
+            if (empty($transactions)) {
+                // If no new rows to insert but PO already exists, treat as success idempotently
+                $existingForPo = SalesTransaction::where('po_number', $poNumber)->get();
+                if ($existingForPo->count() > 0) {
+                    return response()->json([
+                        'status' => 'success',
+                        'message' => 'Purchase order already synced',
+                        'data' => [
+                            'transaction_number' => optional($existingForPo->first())->transaction_number,
+                            'po_number' => $poNumber,
+                            'item_count' => $existingForPo->count()
+                        ]
+                    ]);
+                }
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Tidak ada transaksi yang valid untuk disimpan.'
+                ], 400);
+            }
+
+            // Insert all transactions (same as bulkStore)
+            SalesTransaction::insert($transactions);
+            
+            \Log::info('Offline Sync - Inserted Transactions', [
+                'po_number' => $poNumber,
+                'inserted_count' => count($transactions)
+            ]);
+            
+            // Log the transaction creation
+            \Log::info('Offline Sync - Transaction Created', [
+                'transaction_count' => count($transactions),
+                'transaction_number' => $transactionNumber,
+                'po_number' => $poNumber,
+                'sales_id' => $salesId
+            ]);
+            
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Purchase order created successfully (' . count($transactions) . ' item)',
+                'data' => [
+                    'transaction_number' => $transactionNumber,
+                    'po_number' => $poNumber,
+                    'item_count' => count($transactions)
+                ]
+            ]);
+            
+            }); // End of DB::transaction
+            
+        } catch (\Illuminate\Database\QueryException $e) {
+            // Handle unique constraint violation
+            if ($e->getCode() == 23000 && strpos($e->getMessage(), 'unique_po_number') !== false) {
+                \Log::info('Duplicate PO detected via unique constraint', [
+                    'po_number' => $data['po_number'] ?? 'unknown',
+                    'user_id' => $userId
+                ]);
+                
+                $existingTransaction = SalesTransaction::where('po_number', $data['po_number'])->first();
+                return response()->json([
+                    'status' => 'success',
+                    'message' => 'Purchase order already exists',
+                    'data' => $existingTransaction
+                ]);
+            }
+            
+            \Log::error('Offline Sync Failed - Database Error', [
+                'error' => $e->getMessage(),
+                'data' => $request->all()
+            ]);
+            
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to create purchase order: ' . $e->getMessage()
+            ], 500);
+            
+        } catch (Exception $e) {
+            \Log::error('Offline Sync Failed', [
+                'error' => $e->getMessage(),
+                'data' => $request->all()
+            ]);
+            
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to create purchase order: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    private function hasBracketedProducts(array $data): bool
+    {
+        foreach ($data as $key => $value) {
+            if (preg_match('/^products\\[(\\d+)\\]\\[product_id\\]$/', $key)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private function extractBracketedProductIndexes(array $data): array
+    {
+        $indexes = [];
+        foreach ($data as $key => $value) {
+            if (preg_match('/^products\\[(\\d+)\\]\\[product_id\\]$/', $key, $m)) {
+                $indexes[] = intval($m[1]);
+            }
+        }
+        $indexes = array_values(array_unique($indexes));
+        sort($indexes);
+        return $indexes;
     }
 
 }

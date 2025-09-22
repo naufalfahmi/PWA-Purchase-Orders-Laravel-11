@@ -194,6 +194,58 @@
         </form>
     </div>
 
+        <!-- Sync Status -->
+        <div class="card p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Status Sinkronisasi</h3>
+            <div class="space-y-3 text-sm">
+                <div class="flex justify-between items-center">
+                    <span class="text-gray-600">Status Koneksi</span>
+                    <div class="flex items-center gap-2">
+                        <div class="w-2 h-2 rounded-full bg-green-500" id="connectionDot"></div>
+                        <span class="text-gray-900" id="connectionStatus">Online</span>
+                    </div>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-600">Data Pending Sync</span>
+                    <span class="text-gray-900" id="pendingCount">0</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-600">Data Berhasil Sync</span>
+                    <span class="text-gray-900" id="syncedCount">0</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-600">Data Gagal Sync</span>
+                    <span class="text-gray-900" id="failedCount">0</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-600">Total Data</span>
+                    <span class="text-gray-900" id="totalCount">0</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-600">Last Sync</span>
+                    <span class="text-gray-900" id="lastSyncTime">-</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-600">Sync Progress</span>
+                    <span class="text-gray-900" id="syncProgress">0%</span>
+                </div>
+            </div>
+            <div class="mt-4 flex gap-2 flex-wrap">
+                <button onclick="syncData()" class="btn-primary text-sm px-4 py-2">
+                    Sync Sekarang
+                </button>
+                <button onclick="clearFailedData()" class="btn-secondary text-sm px-4 py-2">
+                    Clear Failed
+                </button>
+                <button onclick="resetSyncTotal()" class="btn-warning text-sm px-4 py-2">
+                    Reset Total
+                </button>
+                <button onclick="clearAllData()" class="btn-danger text-sm px-4 py-2">
+                    Clear All
+                </button>
+            </div>
+        </div>
+
     <!-- App Information -->
     <div class="card p-6">
         <h3 class="text-lg font-semibold text-gray-900 mb-4">Informasi Aplikasi</h3>
@@ -231,6 +283,109 @@ document.addEventListener('DOMContentLoaded', function() {
         skeletonLoader.classList.add('hidden');
         profileContent.classList.remove('hidden');
     }, 1000);
+    
+    // Update sync status
+    updateSyncStatus();
+    
+    // Update sync status every 5 seconds
+    setInterval(updateSyncStatus, 5000);
 });
+
+// Update sync status
+function updateSyncStatus() {
+    // Update connection status
+    const connectionDot = document.getElementById('connectionDot');
+    const connectionStatus = document.getElementById('connectionStatus');
+    
+    if (connectionDot && connectionStatus) {
+        if (navigator.onLine) {
+            connectionDot.className = 'w-2 h-2 rounded-full bg-green-500';
+            connectionStatus.textContent = 'Online';
+        } else {
+            connectionDot.className = 'w-2 h-2 rounded-full bg-red-500';
+            connectionStatus.textContent = 'Offline';
+        }
+    }
+    
+    // Update counts
+    if (window.offlineStorage) {
+        const status = window.offlineStorage.getSyncStatus();
+        document.getElementById('pendingCount').textContent = status.unsynced;
+        document.getElementById('syncedCount').textContent = status.synced;
+        document.getElementById('failedCount').textContent = status.failed;
+        document.getElementById('totalCount').textContent = status.total;
+        
+        // Calculate sync progress
+        const progress = status.total > 0 ? Math.round((status.synced / status.total) * 100) : 0;
+        document.getElementById('syncProgress').textContent = progress + '%';
+        
+        // Update last sync time
+        const lastSync = localStorage.getItem('lastSyncTime');
+        if (lastSync) {
+            const lastSyncDate = new Date(lastSync);
+            document.getElementById('lastSyncTime').textContent = lastSyncDate.toLocaleString('id-ID');
+        } else {
+            document.getElementById('lastSyncTime').textContent = 'Belum pernah sync';
+        }
+    } else {
+        document.getElementById('pendingCount').textContent = '0';
+        document.getElementById('syncedCount').textContent = '0';
+        document.getElementById('failedCount').textContent = '0';
+        document.getElementById('totalCount').textContent = '0';
+        document.getElementById('syncProgress').textContent = '0%';
+        document.getElementById('lastSyncTime').textContent = '-';
+    }
+}
+
+// Sync data
+function syncData() {
+    if (window.offlineStorage) {
+        window.offlineStorage.syncAllData().then(() => {
+            alert('Data berhasil di-sync!');
+            updateSyncStatus();
+        }).catch(error => {
+            alert('Sync gagal: ' + error.message);
+        });
+    } else {
+        alert('Offline storage tidak tersedia');
+    }
+}
+
+// Clear failed data
+function clearFailedData() {
+    if (window.offlineStorage) {
+        window.offlineStorage.clearSyncedData();
+        updateSyncStatus();
+        alert('Data yang sudah di-sync telah dihapus');
+    } else {
+        alert('Offline storage tidak tersedia');
+    }
+}
+
+// Reset sync total
+function resetSyncTotal() {
+    if (window.offlineStorage) {
+        if (confirm('Apakah Anda yakin ingin mereset total sync? Data yang sudah di-sync akan dihapus.')) {
+            window.offlineStorage.resetSyncTotal();
+            updateSyncStatus();
+            alert('Total sync telah direset');
+        }
+    } else {
+        alert('Offline storage tidak tersedia');
+    }
+}
+
+// Clear all data
+function clearAllData() {
+    if (window.offlineStorage) {
+        if (confirm('Apakah Anda yakin ingin menghapus semua data offline? Tindakan ini tidak dapat dibatalkan.')) {
+            window.offlineStorage.clearAllData();
+            updateSyncStatus();
+            alert('Semua data offline telah dihapus');
+        }
+    } else {
+        alert('Offline storage tidak tersedia');
+    }
+}
 </script>
 @endsection

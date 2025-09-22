@@ -1,4 +1,4 @@
-const CACHE_NAME = 'admin-pwa-v8';
+const CACHE_NAME = 'admin-pwa-v9';
 const urlsToCache = [
   // Static assets only - no pages that require auth
   '/build/assets/app-CR2TckGB.css',
@@ -29,13 +29,28 @@ self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => {
-        return cache.addAll(urlsToCache);
+        // Cache resources one by one to handle individual failures
+        const cachePromises = urlsToCache.map(url => {
+          return cache.add(url).catch(error => {
+            console.log(`Failed to cache ${url}:`, error);
+            // Continue with other resources even if one fails
+            return null;
+          });
+        });
+        
+        return Promise.allSettled(cachePromises).then(results => {
+          const successful = results.filter(result => result.status === 'fulfilled').length;
+          const failed = results.filter(result => result.status === 'rejected').length;
+          console.log(`Cached ${successful} resources, ${failed} failed`);
+        });
       })
       .then(() => {
         return self.skipWaiting();
       })
-      .catch(() => {
-        // Silent error handling
+      .catch(error => {
+        console.log('Cache installation failed:', error);
+        // Still skip waiting even if caching failed
+        return self.skipWaiting();
       })
   );
 });
@@ -85,9 +100,15 @@ self.addEventListener('fetch', event => {
             // Clone response for caching
             const responseToCache = networkResponse.clone();
             
-            // Cache the response
-            const cache = await caches.open(CACHE_NAME);
-            await cache.put(event.request, responseToCache);
+            // Cache the response with error handling
+            try {
+              const cache = await caches.open(CACHE_NAME);
+              await cache.put(event.request, responseToCache);
+              console.log(`Cached new resource: ${url}`);
+            } catch (cacheError) {
+              console.log(`Failed to cache ${url}:`, cacheError);
+              // Continue even if caching fails
+            }
           }
         }
         

@@ -68,6 +68,43 @@ Route::get('/test-ajax-simple', function () {
     ]);
 });
 
+// Desktop login test routes (bypass mobile.only middleware)
+Route::get('/desktop-login', [AuthController::class, 'showLogin'])->name('desktop-login');
+Route::post('/desktop-login', [AuthController::class, 'login']);
+Route::get('/desktop', function () {
+    return redirect()->route('desktop-login');
+});
+
+
+// API endpoints for offline sync
+Route::middleware(['auth', 'role:sales,owner'])->group(function () {
+    // Sales Transaction API - Use SalesTransactionController
+    Route::post('/api/sales-transaction', [SalesTransactionController::class, 'bulkStore']);
+    
+    // Purchase Order API - Use SalesTransactionController
+    Route::post('/api/purchase-order', [SalesTransactionController::class, 'bulkStore']);
+    
+    // Product API
+    Route::post('/api/products', function (Illuminate\Http\Request $request) {
+        try {
+            $data = $request->all();
+            $data['created_by'] = auth()->id();
+            
+            $product = \App\Models\Product::create($data);
+            
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Product created successfully',
+                'data' => $product
+            ]);
+        } catch (Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to create product: ' . $e->getMessage()
+            ], 500);
+        }
+    });
+});
 
 // Test endpoint with authentication but no mobile middleware
 Route::middleware(['auth', 'role:sales,owner'])->group(function () {

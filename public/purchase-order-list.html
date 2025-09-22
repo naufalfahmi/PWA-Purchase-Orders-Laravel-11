@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Purchase Orders List</title>
+    <style>
+        body { 
+            font-family: system-ui, sans-serif; 
+            padding: 20px; 
+            background: #f8fafc;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .btn {
+            background: #2563eb;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 10px;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .btn:hover { background: #1d4ed8; }
+        .btn-success { background: #10b981; }
+        .btn-success:hover { background: #059669; }
+        .btn-warning { background: #f59e0b; }
+        .btn-warning:hover { background: #d97706; }
+        .status {
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            font-weight: 500;
+        }
+        .success { background: #d1fae5; color: #065f46; }
+        .error { background: #fee2e2; color: #991b1b; }
+        .info { background: #dbeafe; color: #1e40af; }
+        .warning { background: #fef3c7; color: #92400e; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        th {
+            background: #f3f4f6;
+            font-weight: 600;
+            color: #374151;
+        }
+        .offline-row {
+            background-color: #fef3c7 !important;
+            border-left: 4px solid #f59e0b;
+        }
+        .offline-indicator {
+            font-size: 14px;
+            margin-right: 8px;
+        }
+        .badge-warning {
+            background-color: #f59e0b;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+        .badge-success {
+            background-color: #10b981;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+        .badge-danger {
+            background-color: #ef4444;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .stat-card {
+            background: #f8fafc;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #e5e7eb;
+        }
+        .stat-card h3 {
+            margin: 0 0 5px 0;
+            color: #1f2937;
+            font-size: 14px;
+        }
+        .stat-card p {
+            margin: 0;
+            font-size: 24px;
+            font-weight: bold;
+            color: #2563eb;
+        }
+        .log {
+            background: #f3f4f6;
+            padding: 15px;
+            margin-top: 20px;
+            border-radius: 8px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📋 Purchase Orders List</h1>
+            <div>
+                <a href="/test-po-form.html" class="btn btn-success">+ Add Purchase Order</a>
+                <button class="btn btn-warning" onclick="simulateOffline()">Simulate Offline</button>
+                <button class="btn btn-success" onclick="simulateOnline()">Simulate Online</button>
+                <button class="btn" onclick="syncData()">Sync Data</button>
+            </div>
+        </div>
+        
+        <div class="status info">
+            <strong>Purchase Orders List:</strong><br>
+            Data yang disimpan offline akan muncul di sini dengan indikator 📱 dan status "Offline". 
+            Data akan di-sync otomatis saat koneksi internet tersedia.
+        </div>
+        
+        <!-- Stats -->
+        <div class="stats">
+            <div class="stat-card">
+                <h3>Total PO</h3>
+                <p id="totalCount">0</p>
+            </div>
+            <div class="stat-card">
+                <h3>Offline (Pending)</h3>
+                <p id="offlineCount">0</p>
+            </div>
+            <div class="stat-card">
+                <h3>Synced</h3>
+                <p id="syncedCount">0</p>
+            </div>
+            <div class="stat-card">
+                <h3>Failed</h3>
+                <p id="failedCount">0</p>
+            </div>
+        </div>
+        
+        <!-- PO List Table -->
+        <table id="poTable">
+            <thead>
+                <tr>
+                    <th>PO Number</th>
+                    <th>Supplier</th>
+                    <th>Amount</th>
+                    <th>Status</th>
+                    <th>Created</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="poTableBody">
+                <tr>
+                    <td colspan="6" style="text-align: center; color: #6b7280; padding: 20px;">
+                        No data found
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+        
+        <div id="log" class="log"></div>
+    </div>
+
+    <!-- Include Scripts -->
+    <script src="/js/offline-storage.js"></script>
+    <script src="/js/offline-overlay.js"></script>
+    <script src="/js/offline-enhance.js"></script>
+    <script src="/js/offline-list-manager.js"></script>
+
+    <script>
+        function log(message) {
+            const logEl = document.getElementById('log');
+            const time = new Date().toLocaleTimeString();
+            logEl.textContent += `[${time}] ${message}\n`;
+            logEl.scrollTop = logEl.scrollHeight;
+            console.log(message);
+        }
+
+        function simulateOffline() {
+            log('Simulating offline mode...');
+            Object.defineProperty(navigator, 'onLine', {
+                writable: true,
+                value: false
+            });
+            window.dispatchEvent(new Event('offline'));
+            log('Offline event triggered');
+            updatePOList();
+        }
+
+        function simulateOnline() {
+            log('Simulating online mode...');
+            Object.defineProperty(navigator, 'onLine', {
+                writable: true,
+                value: true
+            });
+            window.dispatchEvent(new Event('online'));
+            log('Online event triggered');
+            updatePOList();
+        }
+
+        function syncData() {
+            log('Manually syncing data...');
+            if (window.offlineStorage) {
+                window.offlineStorage.syncAllData().then(() => {
+                    log('Data synced successfully');
+                    updatePOList();
+                }).catch(error => {
+                    log('Sync failed: ' + error.message);
+                });
+            } else {
+                log('Offline storage not available');
+            }
+        }
+
+        function updateStats() {
+            if (!window.offlineStorage) return;
+            
+            const status = window.offlineStorage.getSyncStatus();
+            document.getElementById('totalCount').textContent = status.total;
+            document.getElementById('offlineCount').textContent = status.unsynced;
+            document.getElementById('syncedCount').textContent = status.synced;
+            document.getElementById('failedCount').textContent = status.failed;
+        }
+
+        function updatePOList() {
+            if (!window.offlineStorage) return;
+            
+            const offlineData = window.offlineStorage.getDataByType('purchase_order');
+            const tbody = document.getElementById('poTableBody');
+            
+            if (offlineData.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="6" style="text-align: center; color: #6b7280; padding: 20px;">
+                            No data found
+                        </td>
+                    </tr>
+                `;
+            } else {
+                tbody.innerHTML = offlineData.map(item => `
+                    <tr class="${item.synced ? '' : 'offline-row'}">
+                        <td>
+                            ${item.synced ? '' : '<span class="offline-indicator">📱</span>'}
+                            ${item.data.po_number || 'Offline Data'}
+                        </td>
+                        <td>${item.data.supplier_name || '-'}</td>
+                        <td>${item.data.total_amount ? new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(item.data.total_amount) : '-'}</td>
+                        <td>
+                            <span class="${item.synced ? 'badge-success' : (item.syncError ? 'badge-danger' : 'badge-warning')}">
+                                ${item.synced ? 'Synced' : (item.syncError ? 'Failed' : 'Offline')}
+                            </span>
+                        </td>
+                        <td>
+                            <small style="color: #6b7280;">${new Date(item.timestamp).toLocaleString('id-ID')}</small>
+                        </td>
+                        <td>
+                            ${item.synced ? '' : `<button class="btn" onclick="retrySync('${item.id}')" style="padding: 4px 8px; font-size: 12px;">Retry</button>`}
+                        </td>
+                    </tr>
+                `).join('');
+            }
+            
+            updateStats();
+        }
+
+        function retrySync(itemId) {
+            log(`Retrying sync for item: ${itemId}`);
+            if (window.offlineStorage) {
+                const offlineData = window.offlineStorage.getOfflineData();
+                const item = offlineData.find(item => item.id === itemId);
+                
+                if (item) {
+                    // Reset sync error
+                    item.syncError = null;
+                    window.offlineStorage.setOfflineData(offlineData);
+                    
+                    // Try to sync
+                    window.offlineStorage.syncAllData().then(() => {
+                        log('Retry sync completed');
+                        updatePOList();
+                    }).catch(error => {
+                        log('Retry sync failed: ' + error.message);
+                        updatePOList();
+                    });
+                }
+            }
+        }
+
+        // Listen for offline/online events
+        window.addEventListener('offline', () => {
+            log('📱 Offline event received');
+        });
+
+        window.addEventListener('online', () => {
+            log('🌐 Online event received');
+        });
+
+        // Initial setup
+        log('Purchase Orders List Page loaded');
+        log('Navigator.onLine: ' + navigator.onLine);
+        
+        // Wait for scripts to load
+        setTimeout(() => {
+            log('Scripts loaded');
+            log('Offline storage available: ' + (window.offlineStorage ? 'Yes' : 'No'));
+            
+            updatePOList();
+            
+            // Update every 3 seconds
+            setInterval(() => {
+                updatePOList();
+            }, 3000);
+        }, 2000);
+    </script>
+</body>
+</html>

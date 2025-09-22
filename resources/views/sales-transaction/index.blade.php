@@ -8,6 +8,14 @@
 <div class="p-4 space-y-4">
     <!-- Header Actions -->
     <div class="flex items-center space-x-3">
+        <!-- Sync indicator -->
+        <div id="syncIndicator" class="hidden items-center space-x-2 text-blue-600">
+            <svg class="w-5 h-5 animate-spin" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+            </svg>
+            <span class="text-sm">Syncing...</span>
+        </div>
         <div class="relative flex-1">
             <form method="GET" action="{{ route('sales-transaction.index') }}" class="relative flex items-center" id="searchForm">
                 <input 
@@ -404,7 +412,7 @@ function loadMorePO() {
     
     // Only show loading indicator if there's actually data to load
     let skeletonId = null;
-    if (hasMorePages) {
+    if (hasMorePages && loadingIndicator) {
         loadingIndicator.classList.remove('hidden');
         // Prevent scroll during infinite scroll loading
         preventScroll();
@@ -453,14 +461,22 @@ function loadMorePO() {
             // Append new PO items to container
             const container = document.getElementById('transactions-container');
             container.insertAdjacentHTML('beforeend', data.html);
+
+            // Remove empty state placeholder if present
+            const emptyState = container.querySelector('.text-center.py-8');
+            if (emptyState) {
+                emptyState.remove();
+            }
         }
         
         hasMorePages = data.hasMore;
         
-        if (!hasMorePages) {
+        if (!hasMorePages && endOfResults) {
             endOfResults.classList.remove('hidden');
         }
-        loadingIndicator.classList.add('hidden');
+        if (loadingIndicator) {
+            loadingIndicator.classList.add('hidden');
+        }
     })
     .catch(error => {
         // Remove skeleton if it exists
@@ -476,7 +492,9 @@ function loadMorePO() {
     })
     .finally(() => {
         isLoading = false;
-        loadingIndicator.classList.add('hidden');
+        if (loadingIndicator) {
+            loadingIndicator.classList.add('hidden');
+        }
         enableScroll();
     });
     }, 500); // 500ms delay
@@ -515,6 +533,11 @@ function clearSearch() {
 // Skeleton loading functions
 function showSkeletonLoading() {
     const container = document.getElementById('transactions-container');
+    
+    // Store offline data before showing skeleton
+    const offlineData = container.querySelectorAll('[data-offline="true"]');
+    const offlineHTML = Array.from(offlineData).map(el => el.outerHTML).join('');
+    
     container.innerHTML = `
         <div class="space-y-4">
             ${Array(3).fill(0).map(() => `
@@ -553,6 +576,11 @@ function showSkeletonLoading() {
             `).join('')}
         </div>
     `;
+    
+    // Re-insert offline data at the beginning
+    if (offlineHTML) {
+        container.insertAdjacentHTML('afterbegin', offlineHTML);
+    }
 }
 
 function hideSkeletonLoading() {
@@ -671,6 +699,11 @@ function hideInitialSkeletonLoading() {
             container.innerHTML = originalContent;
             container.removeAttribute('data-original-content');
         }
+        
+        // Re-integrate offline data after restoring content
+        if (typeof integrateOfflineData === 'function') {
+            integrateOfflineData();
+        }
     }
     // Enable scroll after loading
     enableScroll();
@@ -702,8 +735,12 @@ function performSearch() {
     const container = document.getElementById('transactions-container');
     
     isSearching = true;
-    loadingIndicator.classList.remove('hidden');
-    endOfResults.classList.add('hidden');
+    if (loadingIndicator) {
+        loadingIndicator.classList.remove('hidden');
+    }
+    if (endOfResults) {
+        endOfResults.classList.add('hidden');
+    }
     
     // Prevent scroll and show skeleton loading
     preventScroll();
@@ -760,14 +797,30 @@ function performSearch() {
         return response.json();
     })
     .then(data => {
+        // Store offline data before replacing content
+        const offlineData = container.querySelectorAll('[data-offline="true"]');
+        const offlineHTML = Array.from(offlineData).map(el => el.outerHTML).join('');
+        
         // Replace container content with search results
         container.innerHTML = data.html || '<div class="text-center py-8"><p class="text-gray-500">Tidak ada hasil ditemukan</p></div>';
+        
+        // Re-insert offline data at the beginning
+        if (offlineHTML) {
+            container.insertAdjacentHTML('afterbegin', offlineHTML);
+        }
+
+        // If there are any PO items now, ensure empty placeholder is removed
+        const hasItems = container.querySelectorAll('.po-item').length > 0;
+        if (hasItems) {
+            const emptyState = container.querySelector('.text-center.py-8');
+            if (emptyState) emptyState.remove();
+        }
         
         // Update pagination state
         hasMorePages = data.hasMore;
         currentPage = 1; // Reset to first page
         
-        if (!hasMorePages) {
+        if (!hasMorePages && endOfResults) {
             endOfResults.classList.remove('hidden');
         }
         
@@ -781,11 +834,29 @@ function performSearch() {
         window.history.pushState({}, '', newUrl);
     })
     .catch(error => {
-        container.innerHTML = '<div class="text-center py-8"><p class="text-red-500">Error saat mencari data: ' + error.message + '</p></div>';
+        // Store offline data before showing error
+        const offlineData = container.querySelectorAll('[data-offline="true"]');
+        const offlineHTML = Array.from(offlineData).map(el => el.outerHTML).join('');
+        
+        // If there are items already, keep them and just remove empty placeholder
+        const hasItems = container.querySelectorAll('.po-item').length > 0;
+        if (!hasItems) {
+            container.innerHTML = '<div class="text-center py-8"><p class="text-red-500">Error saat mencari data: ' + error.message + '</p></div>';
+        } else {
+            const emptyState = container.querySelector('.text-center.py-8');
+            if (emptyState) emptyState.remove();
+        }
+        
+        // Re-insert offline data at the beginning
+        if (offlineHTML) {
+            container.insertAdjacentHTML('afterbegin', offlineHTML);
+        }
     })
     .finally(() => {
         isSearching = false;
-        loadingIndicator.classList.add('hidden');
+        if (loadingIndicator) {
+            loadingIndicator.classList.add('hidden');
+        }
         enableScroll();
     });
     }, 500); // 500ms delay
@@ -793,6 +864,23 @@ function performSearch() {
 
 // Auto-submit search form on Enter key and auto-search on input
 document.addEventListener('DOMContentLoaded', function() {
+    // Early attach sync indicator handlers
+    const syncIndicator = document.getElementById('syncIndicator');
+    window.addEventListener('offlineSyncStart', function() {
+        if (syncIndicator) syncIndicator.classList.remove('hidden');
+    });
+    window.addEventListener('offlineSyncEnd', function() {
+        if (syncIndicator) syncIndicator.classList.add('hidden');
+    });
+    window.addEventListener('offlineDataSynced', function(event) {
+        const syncedIds = (event && event.detail && event.detail.syncedIds) ? event.detail.syncedIds : [];
+        if (Array.isArray(syncedIds) && syncedIds.length > 0) {
+            setTimeout(() => {
+                window.location.reload();
+            }, 300);
+        }
+    });
+
     // Show initial skeleton loading
     showInitialSkeletonLoading();
     
@@ -833,7 +921,10 @@ document.addEventListener('DOMContentLoaded', function() {
             // If there's an empty state or no items at all, no more pages
             if (finalEmptyState || finalItems.length === 0) {
                 hasMorePages = false;
-                document.getElementById('end-of-results').classList.remove('hidden');
+                const endOfResultsEl = document.getElementById('end-of-results');
+                if (endOfResultsEl) {
+                    endOfResultsEl.classList.remove('hidden');
+                }
             } else {
                 // Always assume there might be more pages unless we know for sure there aren't
                 hasMorePages = true;
@@ -845,6 +936,8 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Filter functionality
     const filterToggle = document.getElementById('filterToggle');
+    const filterText = document.getElementById('filterText');
+    const activeFilterCount = document.getElementById('activeFilterCount');
     const additionalFilterContainer = document.getElementById('additionalFilterContainer');
     const tokoFilter = document.getElementById('tokoFilter');
     const startDateFilter = document.getElementById('startDateFilter');
@@ -853,7 +946,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Toggle additional filter visibility
     function toggleAdditionalFilter() {
-        additionalFilterContainer.classList.toggle('hidden');
+        if (additionalFilterContainer) {
+            additionalFilterContainer.classList.toggle('hidden');
+        }
         updateFilterStatus();
     }
     
@@ -880,14 +975,16 @@ document.addEventListener('DOMContentLoaded', function() {
         if (supplierFilter && supplierFilter.value) activeCount++;
         
         if (activeCount > 0) {
-            filterToggle.classList.add('filter-active');
-            filterText.textContent = 'Filtered';
-            activeFilterCount.textContent = activeCount;
-            activeFilterCount.classList.remove('hidden');
+            if (filterToggle) filterToggle.classList.add('filter-active');
+            if (filterText) filterText.textContent = 'Filtered';
+            if (activeFilterCount) {
+                activeFilterCount.textContent = activeCount;
+                activeFilterCount.classList.remove('hidden');
+            }
         } else {
-            filterToggle.classList.remove('filter-active');
-            filterText.textContent = 'Filter';
-            activeFilterCount.classList.add('hidden');
+            if (filterToggle) filterToggle.classList.remove('filter-active');
+            if (filterText) filterText.textContent = 'Filter';
+            if (activeFilterCount) activeFilterCount.classList.add('hidden');
         }
     }
 
@@ -1071,7 +1168,440 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-});
-</script>
+    // Initialize offline storage and integrate offline data
+    if (typeof OfflineStorageManager !== 'undefined') {
+        window.offlineStorage = new OfflineStorageManager();
+        
+        // Delay integration to ensure all other scripts have loaded
+        setTimeout(() => {
+            integrateOfflineData();
+            
+            // Set up mutation observer to monitor container changes
+            const container = document.getElementById('transactions-container');
+            if (container) {
+                const observer = new MutationObserver((mutations) => {
+                    mutations.forEach((mutation) => {
+                        if (mutation.type === 'childList') {
+                            const offlineData = container.querySelectorAll('[data-offline="true"]');
+                            console.log('🔍 Container changed - offline data count:', offlineData.length);
+                            
+                            // Only re-integrate if there's offline data in storage but none in DOM
+                            const storageData = window.offlineStorage.getDataByType('purchase_order');
+                            if (storageData.length > 0 && offlineData.length === 0) {
+                                console.log('⚠️ Offline data removed from DOM, re-integrating...');
+                                setTimeout(() => {
+                                    integrateOfflineData();
+                                }, 100);
+                            }
+                        }
+                    });
+                });
+                
+                observer.observe(container, {
+                    childList: true,
+                    subtree: true
+                });
+                
+                console.log('👀 Mutation observer set up for container');
+            }
+        }, 1000);
+    }
+    
+    // Function to integrate offline data with existing PO list
+    let isIntegrating = false;
+    function integrateOfflineData() {
+        if (!window.offlineStorage) {
+            console.log('Offline storage not available');
+            return;
+        }
+        
+        if (isIntegrating) {
+            console.log('⏳ Already integrating, skipping...');
+            return;
+        }
+        
+        isIntegrating = true;
+        
+        const offlineData = window.offlineStorage.getDataByType('purchase_order');
+        const container = document.getElementById('transactions-container');
+        
+        // Check if container exists
+        if (!container) {
+            console.log('❌ Container not found, retrying in 500ms...');
+            setTimeout(() => {
+                integrateOfflineData();
+            }, 500);
+            return;
+        }
+        
+        // Debug: Check all offline data
+        const allOfflineData = window.offlineStorage.getOfflineData();
+        console.log('🔍 All offline data:', allOfflineData);
+        console.log('🔍 Purchase order data:', offlineData);
+        console.log('🔍 Debug offline data:', {
+            offlineData: offlineData,
+            length: offlineData.length,
+            container: container
+        });
+        
+        // Check if offline data already exists to prevent duplication
+        const existingOfflineData = container.querySelectorAll('[data-offline="true"]');
+        console.log('🔍 Existing offline data elements:', existingOfflineData.length);
+        
+        // More strict duplication check - check by PO number and ID
+        if (existingOfflineData.length > 0) {
+            const existingPoNumbers = Array.from(existingOfflineData).map(el => el.getAttribute('data-po'));
+            const existingIds = Array.from(existingOfflineData).map(el => el.getAttribute('data-offline-id'));
+            const newPoNumbers = offlineData.map(item => item.data.po_number);
+            const newIds = offlineData.map(item => item.id);
+            
+            console.log('🔍 Existing PO numbers:', existingPoNumbers);
+            console.log('🔍 New PO numbers:', newPoNumbers);
+            console.log('🔍 Existing IDs:', existingIds);
+            console.log('🔍 New IDs:', newIds);
+            
+            // Check if any new PO numbers or IDs already exist
+            const hasDuplicatePOs = newPoNumbers.some(poNumber => existingPoNumbers.includes(poNumber));
+            const hasDuplicateIds = newIds.some(id => existingIds.includes(id));
+            
+            if (hasDuplicatePOs || hasDuplicateIds) {
+                console.log('Offline data already exists (duplicate PO numbers or IDs), skipping integration');
+                return;
+            }
+        }
+        
+        if (offlineData.length > 0) {
+            console.log('📱 Integrating offline data:', offlineData.length, 'items');
+            // Create offline data HTML
+            const offlineHTML = offlineData.map(item => {
+                // Aggregate totals across all products in the offline payload
+                const products = Array.isArray(item.data.products) ? item.data.products : (item.data.products ? [item.data.products] : []);
+                const quantityPerCartonDefault = 2; // Fallback when we don't know true QPC
+                const totals = products.reduce((acc, p) => {
+                    const qC = parseInt(p.quantity_carton || 0);
+                    const qP = parseInt(p.quantity_piece || 0);
+                    const uP = parseFloat(p.unit_price || 0);
+                    const pieces = (qC * quantityPerCartonDefault) + qP;
+                    acc.items += 1;
+                    acc.quantityPieces += pieces;
+                    acc.amount += pieces * uP;
+                    return acc;
+                }, { items: 0, quantityPieces: 0, amount: 0 });
+                const totalItems = totals.items;
+                const totalQuantityPieces = totals.quantityPieces;
+                const totalAmount = totals.amount;
 
+                // Resolve supplier display name from payload or supplier filter options
+                const supplierId = item.data.supplier_id || '';
+                const supplierName = item.data.supplier_name 
+                    || (document.querySelector(`#supplierFilter option[value="${supplierId}"]`)?.textContent || '').trim()
+                    || supplierId 
+                    || 'N/A';
+
+                // Resolve order acc by from payload or any visible input/select
+                const orderAccBy = (item.data.order_acc_by || item.data.order_acc 
+                    || document.querySelector('input[name="order_acc_by"]')?.value 
+                    || (document.querySelector('select[name="order_acc_by"] option:checked')?.textContent || '').trim() 
+                    || 'N/A');
+                
+                // Determine status
+                let statusClass, statusLabel, statusIcon;
+                if (item.synced) {
+                    statusClass = 'bg-green-100 text-green-800';
+                    statusLabel = 'Synced';
+                    statusIcon = 'M5 13l4 4L19 7';
+                } else if (item.syncError) {
+                    statusClass = 'bg-red-100 text-red-800';
+                    statusLabel = 'Failed';
+                    statusIcon = 'M6 18L18 6M6 6l12 12';
+                } else {
+                    statusClass = 'bg-yellow-100 text-yellow-800';
+                    statusLabel = 'Pending';
+                    statusIcon = 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z';
+                }
+                
+                return `
+                    <div class="po-item cursor-pointer hover:shadow-lg transition-all duration-200" data-po="${item.data.po_number}" data-offline="true" data-offline-id="${item.id}" style="border-left: 4px solid #f59e0b;">
+                        <div class="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow border border-yellow-200">
+                            <div class="bg-gradient-to-r from-yellow-50 to-amber-50 border-b border-yellow-200 rounded-t-lg p-4">
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center space-x-3">
+                                        <div class="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center">
+                                            <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                            </svg>
+                                        </div>
+                                        <div>
+                                            <h3 class="text-lg font-bold text-gray-900">${item.data.po_number} <span class="text-sm text-yellow-600">(Offline)</span></h3>
+                                            <p class="text-sm text-gray-600">Purchase Order - Offline</p>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center space-x-2">
+                                        <span class="px-3 py-1 text-xs font-medium rounded-full ${statusClass}">
+                                            ${statusLabel}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="p-4">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div class="space-y-3">
+                                        <div class="flex items-center space-x-2">
+                                            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                                            </svg>
+                                            <span class="text-sm text-gray-600">Supplier:</span>
+                                            <span class="text-sm font-medium text-gray-900">${supplierName}</span>
+                                        </div>
+                                        
+                                        <div class="flex items-center space-x-2">
+                                            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                            </svg>
+                                            <span class="text-sm text-gray-600">Tanggal:</span>
+                                            <span class="text-sm font-medium text-gray-900">${new Date(item.timestamp).toLocaleDateString('id-ID')}</span>
+                                        </div>
+                                        
+                                        <div class="flex items-center space-x-2">
+                                            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                                            </svg>
+                                            <span class="text-sm text-gray-600">Order Acc By:</span>
+                                            <span class="text-sm font-medium text-gray-900">${orderAccBy}</span>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="space-y-3">
+                                        <div class="flex items-center space-x-2">
+                                            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+                                            </svg>
+                                            <span class="text-sm text-gray-600">Items:</span>
+                                            <span class="text-sm font-medium text-gray-900">${totalItems} produk</span>
+                                        </div>
+                                        
+                                        <div class="flex items-center space-x-2">
+                                            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 4V2a1 1 0 011-1h8a1 1 0 011 1v2m-9 0h10m-9 0a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V6a2 2 0 00-2-2M9 4h6"></path>
+                                            </svg>
+                                            <span class="text-sm text-gray-600">Quantity:</span>
+                                            <span class="text-sm font-medium text-gray-900">${totalQuantityPieces} units</span>
+                                        </div>
+                                        
+                                        <div class="flex items-center space-x-2">
+                                            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
+                                            </svg>
+                                            <span class="text-sm text-gray-600">Total Amount:</span>
+                                            <span class="text-sm font-bold text-blue-600">Rp ${totalAmount.toLocaleString('id-ID')}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                ${item.data.general_notes ? `
+                                <div class="mt-4 pt-3 border-t border-gray-100">
+                                    <div class="flex items-start space-x-2">
+                                        <svg class="w-4 h-4 text-gray-400 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"></path>
+                                        </svg>
+                                        <div>
+                                            <span class="text-sm text-gray-600">Notes:</span>
+                                            <p class="text-sm text-gray-700 mt-1">${item.data.general_notes}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                ` : ''}
+                            </div>
+                            
+                            <div class="bg-yellow-50 border-t border-yellow-100 rounded-b-lg px-4 py-2">
+                                <div class="flex items-center justify-between text-xs">
+                                    <div class="flex items-center text-yellow-600">
+                                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${statusIcon}"></path>
+                                        </svg>
+                                        <span class="font-medium">Data offline - ${statusLabel.toLowerCase()}</span>
+                                    </div>
+                                    <span class="text-yellow-500">${new Date(item.timestamp).toLocaleString('id-ID')}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            // Insert offline data at the beginning of the container
+            container.insertAdjacentHTML('afterbegin', offlineHTML);
+            console.log('✅ Offline data inserted successfully');
+            
+            // Monitor if data gets removed
+            setTimeout(() => {
+                const checkOfflineData = container.querySelectorAll('[data-offline="true"]');
+                console.log('🔍 Check after 2 seconds - offline data count:', checkOfflineData.length);
+                if (checkOfflineData.length === 0) {
+                    console.log('⚠️ Offline data disappeared! Re-integrating...');
+                    integrateOfflineData();
+                }
+            }, 2000);
+        } else {
+            console.log('ℹ️ No offline data to integrate');
+        }
+        
+        // Reset integration flag
+        isIntegrating = false;
+    }
+    
+    // Listen for offline data updates
+    window.addEventListener('offlineDataUpdated', function(event) {
+        console.log('📱 Offline data updated event received:', event.detail);
+        integrateOfflineData();
+    });
+    
+    // Listen for sync completion to remove synced data from DOM
+    window.addEventListener('offlineDataSynced', function(event) {
+        console.log('🔄 Offline data synced event received:', event.detail);
+        const syncedIds = (event && event.detail && event.detail.syncedIds) ? event.detail.syncedIds : [];
+        
+        // Remove synced items from DOM
+        syncedIds.forEach(id => {
+            const element = document.querySelector(`[data-offline-id="${id}"]`);
+            if (element) {
+                element.remove();
+                console.log(`🗑️ Removed synced item from DOM: ${id}`);
+            }
+        });
+        if (syncedIds.length > 0) {
+            // Reload full page so server data reflects the synced items
+            setTimeout(() => {
+                window.location.reload();
+            }, 300);
+        }
+    });
+
+    // On load, if there are pending items, show spinner and trigger sync
+    setTimeout(() => {
+        try {
+            if (window.offlineStorage) {
+                const queue = window.offlineStorage.getSyncQueue ? window.offlineStorage.getSyncQueue() : [];
+                const pending = (queue || []).filter(i => !i.synced).length;
+                if (pending > 0 && navigator.onLine) {
+                    if (syncIndicator) syncIndicator.classList.remove('hidden');
+                    window.offlineStorage.syncAllData();
+                }
+            }
+        } catch (e) {}
+    }, 500);
+    
+    // Debug functions
+    window.clearOfflineData = function() {
+        if (window.offlineStorage) {
+            window.offlineStorage.clearAllData();
+            console.log('🧹 All offline data cleared');
+            // Remove existing offline data from DOM
+            const existingOfflineData = document.querySelectorAll('[data-offline="true"]');
+            existingOfflineData.forEach(el => el.remove());
+            console.log('🧹 Removed', existingOfflineData.length, 'offline elements from DOM');
+        }
+    };
+    
+    window.debugOfflineData = function() {
+        if (window.offlineStorage) {
+            const allData = window.offlineStorage.getOfflineData();
+            const poData = window.offlineStorage.getDataByType('purchase_order');
+            console.log('🔍 Debug Results:');
+            console.log('- All offline data:', allData);
+            console.log('- Purchase order data:', poData);
+            console.log('- Total items:', allData.length);
+            console.log('- PO items:', poData.length);
+            
+            // Check localStorage directly
+            const rawData = localStorage.getItem('offlineData');
+            console.log('- Raw localStorage:', rawData);
+            
+            // Check DOM
+            const container = document.getElementById('transactions-container');
+            const offlineElements = container ? container.querySelectorAll('[data-offline="true"]') : [];
+            console.log('- Offline elements in DOM:', offlineElements.length);
+        }
+    };
+    
+    window.reIntegrateOfflineData = function() {
+        console.log('🔄 Manual re-integration triggered');
+        integrateOfflineData();
+    };
+    
+});
+
+function refreshServerList() {
+    const container = document.getElementById('transactions-container');
+    if (!container) return;
+
+    const loadingIndicator = document.getElementById('loading-indicator');
+    const endOfResults = document.getElementById('end-of-results');
+
+    // Preserve any remaining offline items before replacing content
+    const existingOfflineEls = container.querySelectorAll('[data-offline="true"]');
+    const preservedOfflineHTML = Array.from(existingOfflineEls).map(el => el.outerHTML).join('');
+
+    if (loadingIndicator) loadingIndicator.classList.remove('hidden');
+    preventScroll();
+    showSkeletonLoading();
+
+    // Build params from current URL filters
+    const params = new URLSearchParams();
+    params.append('page', 1);
+    const urlParams = new URLSearchParams(window.location.search);
+    ['approval_status', 'start_date', 'end_date', 'sales_id', 'toko', 'supplier_id', 'search'].forEach(param => {
+        if (urlParams.get(param)) {
+            params.append(param, urlParams.get(param));
+        }
+    });
+
+    const url = `{{ route('sales-transaction.load-more') }}?${params.toString()}`;
+
+    fetch(url, {
+        method: 'GET',
+        credentials: 'same-origin',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Accept': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        }
+    })
+    .then(response => {
+        if (!response.ok) {
+            return response.text().then(text => {
+                throw new Error(`Network response was not ok: ${response.status} - ${text.substring(0, 200)}`);
+            });
+        }
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+            return response.text().then(text => {
+                throw new Error('Response is not JSON. Content-Type: ' + contentType + '. Response: ' + text.substring(0, 200));
+            });
+        }
+        return response.json();
+    })
+    .then(data => {
+        // Replace container content with fresh server HTML
+        container.innerHTML = data.html || '<div class="text-center py-8"><p class="text-gray-500">Tidak ada hasil ditemukan</p></div>';
+        // Re-insert any remaining offline items at the top
+        if (preservedOfflineHTML) {
+            container.insertAdjacentHTML('afterbegin', preservedOfflineHTML);
+        }
+        // Update pagination state hints
+        if (!data.hasMore && endOfResults) {
+            endOfResults.classList.remove('hidden');
+        }
+    })
+    .catch(error => {
+        // On error, keep current content and re-insert preserved offline items (already preserved)
+        console.error('Failed to refresh server list:', error);
+    })
+    .finally(() => {
+        if (loadingIndicator) loadingIndicator.classList.add('hidden');
+        enableScroll();
+    });
+}
+</script>
 @endsection

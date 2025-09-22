@@ -17,6 +17,40 @@
     <link rel="manifest" href="{{ asset('manifest.json') }}">
     
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    
+    <!-- Local Fonts -->
+    <link rel="stylesheet" href="{{ asset('css/inter-fonts.css') }}">
+    
+    <!-- Inline Fallback Script - Critical CSS and offline handling -->
+    <script src="{{ asset('js/inline-fallback.js') }}"></script>
+    
+    <!-- Offline Overlay Script - Add offline indicator to any page -->
+    <script src="{{ asset('js/offline-overlay.js') }}"></script>
+    
+    <!-- Offline Storage Script - Handle offline data storage and sync -->
+    <script src="{{ asset('js/offline-storage.js') }}"></script>
+    
+    <!-- Offline Enhancement Script - Add offline capabilities to existing pages -->
+    <script src="{{ asset('js/offline-enhance.js') }}"></script>
+    
+    <!-- Offline List Manager Script - Display offline data in lists -->
+    <script src="{{ asset('js/offline-list-manager.js') }}"></script>
+    
+    <!-- Register Service Worker (Optional) -->
+    <script>
+        // Try to register Service Worker for caching, but don't rely on it
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw-simple.js')
+                    .then(registration => {
+                        console.log('SW registered:', registration.scope);
+                    })
+                    .catch(error => {
+                        console.log('SW failed, using fallback mode:', error);
+                    });
+            });
+        }
+    </script>
 </head>
 <body class="bg-gray-50 min-h-screen flex items-center justify-center">
     <div class="w-full max-w-md">
