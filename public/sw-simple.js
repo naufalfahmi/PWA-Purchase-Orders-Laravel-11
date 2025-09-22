@@ -1,18 +1,12 @@
-const CACHE_NAME = 'admin-pwa-v7';
+const CACHE_NAME = 'admin-pwa-v8';
 const urlsToCache = [
-  '/',
-  '/login',
-  '/dashboard',
-  '/purchase-order',
-  '/data-barang',
-  '/profile',
-  '/offline.html',
+  // Static assets only - no pages that require auth
   '/build/assets/app-CR2TckGB.css',
   '/build/assets/app-D2c31c7y.js',
   '/css/mobile-fallback.css',
   '/css/inter-fonts.css',
+  '/js/inline-fallback.js',
   '/js/qr-generator.js',
-  '/js/smart-cache.js',
   '/libs/jquery-3.6.0.min.js',
   '/libs/select2.min.css',
   '/libs/select2-bootstrap-5-theme.min.css',
@@ -27,10 +21,7 @@ const urlsToCache = [
   '/manifest.json',
   '/icons/icon-192x192.png',
   '/icons/icon-512x512.png',
-  '/sales-transaction',
-  '/sales-transaction/create',
-  '/sales-transaction/bulk-create',
-  '/reports'
+  '/offline.html'
 ];
 
 // Install event
@@ -76,7 +67,7 @@ self.addEventListener('fetch', event => {
   event.respondWith(
     (async () => {
       try {
-        // Try cache first
+        // Try cache first for static assets
         const cachedResponse = await caches.match(event.request);
         if (cachedResponse) {
           return cachedResponse;
@@ -85,14 +76,19 @@ self.addEventListener('fetch', event => {
         // Try network
         const networkResponse = await fetch(event.request);
         
-        // Check if response is valid
+        // Only cache static assets (CSS, JS, fonts, images)
         if (networkResponse && networkResponse.status === 200) {
-          // Clone response for caching
-          const responseToCache = networkResponse.clone();
-          
-          // Cache the response
-          const cache = await caches.open(CACHE_NAME);
-          await cache.put(event.request, responseToCache);
+          const url = event.request.url;
+          if (url.includes('.css') || url.includes('.js') || url.includes('.woff2') || 
+              url.includes('.png') || url.includes('.jpg') || url.includes('.jpeg') ||
+              url.includes('.gif') || url.includes('.svg') || url.includes('.ico')) {
+            // Clone response for caching
+            const responseToCache = networkResponse.clone();
+            
+            // Cache the response
+            const cache = await caches.open(CACHE_NAME);
+            await cache.put(event.request, responseToCache);
+          }
         }
         
         return networkResponse;
@@ -104,6 +100,63 @@ self.addEventListener('fetch', event => {
           if (offlinePage) {
             return offlinePage;
           }
+          
+          // Return a custom offline page for authenticated routes
+          return new Response(`
+            <!DOCTYPE html>
+            <html lang="id">
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>Offline - Admin PWA</title>
+                <style>
+                    body { 
+                        font-family: system-ui, sans-serif; 
+                        margin: 0; 
+                        padding: 20px; 
+                        background: #f8fafc;
+                        text-align: center;
+                    }
+                    .container {
+                        max-width: 600px;
+                        margin: 50px auto;
+                        background: white;
+                        padding: 40px;
+                        border-radius: 12px;
+                        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+                    }
+                    .offline-icon {
+                        font-size: 64px;
+                        margin-bottom: 20px;
+                    }
+                    h1 { color: #1f2937; margin-bottom: 10px; }
+                    p { color: #6b7280; margin-bottom: 30px; }
+                    .btn {
+                        background: #2563eb;
+                        color: white;
+                        padding: 12px 24px;
+                        border: none;
+                        border-radius: 8px;
+                        cursor: pointer;
+                        text-decoration: none;
+                        display: inline-block;
+                    }
+                    .btn:hover { background: #1d4ed8; }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <div class="offline-icon">📱</div>
+                    <h1>You are offline</h1>
+                    <p>Please check your internet connection and try again.</p>
+                    <a href="/" class="btn">Go to Login</a>
+                </div>
+            </body>
+            </html>
+          `, {
+            status: 200,
+            headers: { 'Content-Type': 'text/html' }
+          });
         }
         
         // For CSS/JS files, try to find similar cached file
@@ -119,7 +172,7 @@ self.addEventListener('fetch', event => {
           }
         }
         
-        // Return offline response
+        // Return offline response for other requests
         return new Response('Offline', { 
           status: 503, 
           statusText: 'Service Unavailable',
