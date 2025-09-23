@@ -60,7 +60,6 @@ class POReportExport implements FromCollection, WithHeadings, WithMapping, WithS
             'Supplier',
             'Nama Barang',
             'Kategori',
-            'Sub Kategori',
             'Jumlah Karton',
             'Jumlah Piece',
             'Total Piece',
@@ -107,7 +106,6 @@ class POReportExport implements FromCollection, WithHeadings, WithMapping, WithS
             $transaction->supplier->nama_supplier ?? '-',
             $transaction->product->name ?? '-',
             $transaction->product->category ?? '-',
-            $transaction->product->sub_category ?? '-',
             $transaction->quantity_carton ?? 0,
             $transaction->quantity_piece ?? 0,
             $transaction->total_quantity_piece ?? 0,
@@ -126,7 +124,7 @@ class POReportExport implements FromCollection, WithHeadings, WithMapping, WithS
     public function styles(Worksheet $sheet)
     {
         // Header styles
-        $lastHeaderColumn = $this->groupedByPO ? 'N' : 'S';
+        $lastHeaderColumn = $this->groupedByPO ? 'N' : 'R';
         $sheet->getStyle('A1:' . $lastHeaderColumn . '1')->applyFromArray([
             'font' => [
                 'bold' => true,
@@ -211,19 +209,18 @@ class POReportExport implements FromCollection, WithHeadings, WithMapping, WithS
             'D' => 25,  // Supplier
             'E' => 30,  // Nama Barang
             'F' => 15,  // Kategori
-            'G' => 15,  // Sub Kategori
-            'H' => 12,  // Jumlah Karton
-            'I' => 12,  // Jumlah Piece
-            'J' => 12,  // Total Piece
-            'K' => 15,  // Harga Satuan
-            'L' => 15,  // Total Harga
-            'M' => 15,  // Status Approval
-            'N' => 20,  // Diapprove Oleh
-            'O' => 18,  // Tanggal Approval
-            'P' => 25,  // Catatan Approval
-            'Q' => 20,  // Sales
-            'R' => 30,  // Catatan Umum
-            'S' => 18,  // Tanggal Pengiriman
+            'G' => 12,  // Jumlah Karton
+            'H' => 12,  // Jumlah Piece
+            'I' => 12,  // Total Piece
+            'J' => 15,  // Harga Satuan
+            'K' => 15,  // Total Harga
+            'L' => 15,  // Status Approval
+            'M' => 20,  // Diapprove Oleh
+            'N' => 18,  // Tanggal Approval
+            'O' => 25,  // Catatan Approval
+            'P' => 20,  // Sales
+            'Q' => 30,  // Catatan Umum
+            'R' => 18,  // Tanggal Pengiriman
         ];
     }
 
