@@ -130,12 +130,34 @@ class InlineFallbackManager {
     }
 
     async preloadCriticalAssets() {
-        const criticalAssets = [
-            '/build/assets/app-CR2TckGB.css',
-            '/build/assets/app-D2c31c7y.js',
-            '/css/inter-fonts.css',
-            '/css/mobile-fallback.css'
-        ];
+        // Dynamic asset detection - try to find current build assets
+        const criticalAssets = [];
+        
+        // Try to find CSS assets
+        const cssLinks = document.querySelectorAll('link[href*="/build/assets/"]');
+        cssLinks.forEach(link => {
+            if (link.href.includes('.css')) {
+                criticalAssets.push(link.href.replace(window.location.origin, ''));
+            }
+        });
+        
+        // Try to find JS assets
+        const jsScripts = document.querySelectorAll('script[src*="/build/assets/"]');
+        jsScripts.forEach(script => {
+            if (script.src.includes('.js')) {
+                criticalAssets.push(script.src.replace(window.location.origin, ''));
+            }
+        });
+        
+        // Fallback to known assets if none found
+        if (criticalAssets.length === 0) {
+            criticalAssets.push(
+                '/build/assets/app-CP0OoLXE.css',
+                '/build/assets/app-Dd4mxizw.js',
+                '/css/inter-fonts.css',
+                '/css/mobile-fallback.css'
+            );
+        }
 
         for (const asset of criticalAssets) {
             try {
