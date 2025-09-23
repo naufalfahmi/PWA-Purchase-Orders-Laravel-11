@@ -511,6 +511,185 @@
                     });
             });
         }
+
+        // Session Management
+        let sessionCheckInterval;
+        let lastActivity = Date.now();
+        const SESSION_TIMEOUT = {{ config('session.lifetime', 120) * 60 * 1000 }}; // Convert minutes to milliseconds
+        const WARNING_TIME = 5 * 60 * 1000; // 5 minutes before expiry
+
+        // Track user activity
+        function updateLastActivity() {
+            lastActivity = Date.now();
+        }
+
+        // Add event listeners for user activity
+        ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'].forEach(function(name) {
+            document.addEventListener(name, updateLastActivity, true);
+        });
+
+        // Check session status
+        function checkSession() {
+            const now = Date.now();
+            const timeSinceActivity = now - lastActivity;
+            const timeUntilExpiry = SESSION_TIMEOUT - timeSinceActivity;
+
+            // If session expired
+            if (timeSinceActivity >= SESSION_TIMEOUT) {
+                showSessionExpiredModal();
+                return;
+            }
+
+            // If approaching expiry (5 minutes warning)
+            if (timeUntilExpiry <= WARNING_TIME && timeUntilExpiry > 0) {
+                showSessionWarningModal(timeUntilExpiry);
+            }
+        }
+
+        // Show session warning modal
+        function showSessionWarningModal(timeRemaining) {
+            const minutes = Math.ceil(timeRemaining / (60 * 1000));
+            
+            // Check if modal already exists
+            if (document.getElementById('session-warning-modal')) {
+                return;
+            }
+
+            const modal = document.createElement('div');
+            modal.id = 'session-warning-modal';
+            modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+            modal.innerHTML = `
+                <div class="bg-white rounded-lg p-6 max-w-sm mx-4">
+                    <div class="flex items-center mb-4">
+                        <svg class="w-8 h-8 text-yellow-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                        </svg>
+                        <h3 class="text-lg font-semibold text-gray-900">Sesi Akan Berakhir</h3>
+                    </div>
+                    <p class="text-gray-600 mb-4">
+                        Sesi Anda akan berakhir dalam ${minutes} menit. Klik "Perpanjang Sesi" untuk melanjutkan.
+                    </p>
+                    <div class="flex space-x-3">
+                        <button onclick="extendSession()" class="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
+                            Perpanjang Sesi
+                        </button>
+                        <button onclick="logout()" class="flex-1 bg-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-400">
+                            Logout
+                        </button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+
+        // Show session expired modal
+        function showSessionExpiredModal() {
+            // Remove warning modal if exists
+            const warningModal = document.getElementById('session-warning-modal');
+            if (warningModal) {
+                warningModal.remove();
+            }
+
+            // Check if expired modal already exists
+            if (document.getElementById('session-expired-modal')) {
+                return;
+            }
+
+            const modal = document.createElement('div');
+            modal.id = 'session-expired-modal';
+            modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+            modal.innerHTML = `
+                <div class="bg-white rounded-lg p-6 max-w-sm mx-4">
+                    <div class="flex items-center mb-4">
+                        <svg class="w-8 h-8 text-red-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        <h3 class="text-lg font-semibold text-gray-900">Sesi Telah Berakhir</h3>
+                    </div>
+                    <p class="text-gray-600 mb-4">
+                        Sesi Anda telah berakhir karena tidak ada aktivitas. Silakan login kembali untuk melanjutkan.
+                    </p>
+                    <button onclick="redirectToLogin()" class="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
+                        Login Kembali
+                    </button>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+
+        // Extend session
+        function extendSession() {
+            // Remove warning modal
+            const warningModal = document.getElementById('session-warning-modal');
+            if (warningModal) {
+                warningModal.remove();
+            }
+
+            // Update last activity
+            updateLastActivity();
+
+            // Send heartbeat to server
+            fetch('{{ route("session.heartbeat") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                }
+            }).catch(error => {
+                console.log('Heartbeat failed:', error);
+            });
+        }
+
+        // Logout function
+        function logout() {
+            // Remove modals
+            const warningModal = document.getElementById('session-warning-modal');
+            const expiredModal = document.getElementById('session-expired-modal');
+            if (warningModal) warningModal.remove();
+            if (expiredModal) expiredModal.remove();
+
+            // Submit logout form
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '{{ route("logout") }}';
+            
+            const csrfToken = document.createElement('input');
+            csrfToken.type = 'hidden';
+            csrfToken.name = '_token';
+            csrfToken.value = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+            
+            form.appendChild(csrfToken);
+            document.body.appendChild(form);
+            form.submit();
+        }
+
+        // Redirect to login
+        function redirectToLogin() {
+            window.location.href = '{{ route("login") }}?expired=1';
+        }
+
+        // Start session monitoring
+        function startSessionMonitoring() {
+            // Check every minute
+            sessionCheckInterval = setInterval(checkSession, 60000);
+        }
+
+        // Stop session monitoring
+        function stopSessionMonitoring() {
+            if (sessionCheckInterval) {
+                clearInterval(sessionCheckInterval);
+            }
+        }
+
+        // Initialize session monitoring when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            startSessionMonitoring();
+        });
+
+        // Clean up when page unloads
+        window.addEventListener('beforeunload', function() {
+            stopSessionMonitoring();
+        });
     </script>
 
     {{-- View-level pushed scripts (e.g., Select2) --}}

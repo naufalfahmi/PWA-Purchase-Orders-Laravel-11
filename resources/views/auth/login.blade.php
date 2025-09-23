@@ -13,6 +13,20 @@
         </div>
         <h1 class="text-2xl font-bold text-gray-900">Munah - Purchase Orders</h1>
         <p class="text-gray-600 mt-2">Silakan login untuk melanjutkan</p>
+        
+        <!-- Session Expired Message -->
+        @if(request()->get('expired'))
+            <div class="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+                <div class="flex items-center">
+                    <svg class="w-5 h-5 text-red-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <p class="text-sm text-red-700">
+                        Sesi Anda telah berakhir karena tidak ada aktivitas. Silakan login kembali.
+                    </p>
+                </div>
+            </div>
+        @endif
     </div>
 
     <!-- Login Form -->

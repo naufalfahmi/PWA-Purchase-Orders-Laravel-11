@@ -22,6 +22,11 @@ Route::middleware(['mobile.only'])->group(function () {
         return redirect()->route('login');
     });
 
+    // Session heartbeat route
+    Route::post('/session/heartbeat', function() {
+        return response()->json(['status' => 'ok', 'timestamp' => now()]);
+    })->name('session.heartbeat');
+
     // Protected Routes - Only Sales and Owner can access
     Route::middleware(['auth', 'role:sales,owner'])->group(function () {
         // Dashboard
