@@ -207,21 +207,27 @@
     <!-- Summary -->
     <div class="summary">
         <h3>Ringkasan Data</h3>
+        <?php
+            $totalTransactions = $transactions->groupBy('po_number')->count();
+            $totalAmount = $transactions->sum('total_amount');
+            $totalQuantity = $transactions->sum('total_quantity_piece');
+            $supplierCounts = $transactions->groupBy(function($t){ return optional($t->supplier)->nama_supplier ?: 'N/A'; })->count();
+        ?>
         <div class="summary-grid">
             <div class="summary-item">
-                <span class="summary-value">{{ number_format($summary['total_transactions']) }}</span>
+                <span class="summary-value">{{ number_format($totalTransactions) }}</span>
                 <div class="summary-label">Total Transaksi</div>
             </div>
             <div class="summary-item">
-                <span class="summary-value">Rp {{ number_format($summary['total_amount'], 0, ',', '.') }}</span>
+                <span class="summary-value">Rp {{ number_format($totalAmount, 0, ',', '.') }}</span>
                 <div class="summary-label">Total Nilai</div>
             </div>
             <div class="summary-item">
-                <span class="summary-value">{{ number_format($summary['total_quantity']) }}</span>
+                <span class="summary-value">{{ number_format($totalQuantity) }}</span>
                 <div class="summary-label">Total Quantity</div>
             </div>
             <div class="summary-item">
-                <span class="summary-value">{{ $summary['supplier_counts']->count() }}</span>
+                <span class="summary-value">{{ $supplierCounts }}</span>
                 <div class="summary-label">Jumlah Supplier</div>
             </div>
         </div>
