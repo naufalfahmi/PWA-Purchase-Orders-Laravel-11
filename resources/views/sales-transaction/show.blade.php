@@ -241,6 +241,15 @@
             @php($poNumber = $transactions->first()->po_number ?? null)
             @if($poNumber)
                 <a href="{{ route('sales-transaction.edit-po', $poNumber) }}" class="btn-primary">Edit PO</a>
+                @if(Auth::user()->isOwner())
+                <form action="{{ route('sales-transaction.delete-po', $poNumber) }}" method="POST" onsubmit="return confirmDeletePO(event)" style="display:inline-block;">
+                    @csrf
+                    @method('DELETE')
+                    <button type="submit" class="btn-danger" style="background-color:#dc2626; color:white; padding:8px 12px; border-radius:8px;">
+                        Hapus PO
+                    </button>
+                </form>
+                @endif
             @endif
         </div>
     </div>
@@ -561,6 +570,14 @@
                 document.body.removeChild(modal);
             }
         }, 10000);
+    }
+
+    function confirmDeletePO(e) {
+        if (!confirm('Yakin ingin menghapus PO ini? Tindakan ini tidak dapat dibatalkan.')) {
+            e.preventDefault();
+            return false;
+        }
+        return true;
     }
     
     

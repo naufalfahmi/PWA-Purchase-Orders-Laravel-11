@@ -398,6 +398,35 @@ class SalesTransactionController extends Controller
     }
 
     /**
+     * Delete all transactions in a PO (Owner only)
+     */
+    public function deletePO(Request $request, $poNumber)
+    {
+        // Only Owner can delete
+        if (!auth()->user() || !auth()->user()->isOwner()) {
+            abort(403, 'Unauthorized');
+        }
+
+        // Optional: prevent deleting approved POs unless forced
+        $hasApproved = SalesTransaction::where('po_number', $poNumber)
+            ->where('approval_status', 'approved')
+            ->exists();
+
+        if ($hasApproved) {
+            return back()->with('error', 'Tidak dapat menghapus PO yang sudah disetujui.');
+        }
+
+        $deleted = SalesTransaction::where('po_number', $poNumber)->delete();
+
+        if ($deleted > 0) {
+            return redirect()->route('sales-transaction.index')
+                ->with('success', 'PO ' . $poNumber . ' berhasil dihapus.');
+        }
+
+        return back()->with('error', 'PO tidak ditemukan atau sudah dihapus.');
+    }
+
+    /**
      * Edit bulk PO by PO number (prefill items)
      */
     public function editPO($poNumber)
