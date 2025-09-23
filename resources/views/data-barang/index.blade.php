@@ -216,7 +216,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const filterToggle = document.getElementById('filterToggle');
     const supplierFilterContainer = document.getElementById('supplierFilterContainer');
 
-    // Show skeleton loader with 2-second delay
+    // Show skeleton loader with 1-second delay
     function showSkeletonLoader() {
         skeletonLoader.classList.remove('hidden');
         productsList.classList.add('hidden');
@@ -224,7 +224,7 @@ document.addEventListener('DOMContentLoaded', function() {
         setTimeout(() => {
             skeletonLoader.classList.add('hidden');
             productsList.classList.remove('hidden');
-        }, 2000);
+        }, 1000);
     }
 
     // Initial page load with skeleton
@@ -237,7 +237,7 @@ document.addEventListener('DOMContentLoaded', function() {
         setTimeout(() => {
             skeletonLoader.classList.add('hidden');
             productsList.classList.remove('hidden');
-        }, 2000);
+        }, 1000);
     }
 
     // Load more products
@@ -354,7 +354,7 @@ document.addEventListener('DOMContentLoaded', function() {
             endOfResults.classList.add('hidden');
             
             // hasMorePages already initialized above
-        }, 2000);
+        }, 1000);
     }
 
     // Search products with skeleton loading
@@ -367,7 +367,7 @@ document.addEventListener('DOMContentLoaded', function() {
             
             setTimeout(() => {
                 filterProductsBySearch();
-            }, 2000);
+            }, 1000);
         } else {
             // If search is empty, show all products immediately
             filterProductsBySearch();
