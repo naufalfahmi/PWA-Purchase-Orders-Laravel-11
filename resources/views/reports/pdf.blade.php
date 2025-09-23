@@ -268,7 +268,7 @@
                         <td class="text-center">{{ $transaction->quantity_piece ?? 0 }}</td>
                         
                         <td class="text-right">Rp {{ number_format($transaction->unit_price ?? 0, 0, ',', '.') }}</td>
-                        <td class="text-right">Rp {{ number_format($transaction->total_amount ?? 0, 0, ',', '.') }}</td>
+                        <td class="text-right">Rp {{ number_format((((($transaction->quantity_carton ?? 0) > 0 ? ($transaction->quantity_carton ?? 0) : ($transaction->quantity_piece ?? 0)) * ($transaction->unit_price ?? 0))), 0, ',', '.') }}</td>
                         <td class="text-center">
                             @if($transaction->approval_status == 'pending')
                                 <span class="status-pending">Pending</span>
