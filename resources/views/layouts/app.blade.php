@@ -363,11 +363,20 @@
                     <span>Dashboard</span>
                 </a>
                 
-                <a href="{{ route('sales-transaction.index') }}" class="mobile-nav-item {{ request()->routeIs('sales-transaction.*') ? 'active' : '' }}">
+                <a href="{{ route('sales-transaction.index') }}" class="mobile-nav-item {{ request()->routeIs('sales-transaction.*') ? 'active' : '' }}" style="position:relative;">
                     <svg class="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                     </svg>
                     <span>PO</span>
+                    @if(Auth::user()->isOwner())
+                        @php
+                            $pendingPoCount = \App\Models\SalesTransaction::where('approval_status', 'pending')->distinct('po_number')->count('po_number');
+                            if ($pendingPoCount > 99) { $displayCount = '99+'; } else { $displayCount = (string) $pendingPoCount; }
+                        @endphp
+                        @if($pendingPoCount > 0)
+                            <span style="position:absolute; top:-2px; right:18px; background:#ef4444; color:#fff; border-radius:9999px; padding:0 6px; font-size:10px; line-height:16px; height:16px; min-width:16px; text-align:center;">{{ $displayCount }}</span>
+                        @endif
+                    @endif
                 </a>
                 
                 @if(Auth::user()->isOwner())
