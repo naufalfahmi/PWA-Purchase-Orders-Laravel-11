@@ -115,12 +115,12 @@ class POReportExport implements FromCollection, WithHeadings, WithMapping, WithS
             $transaction->quantity_piece ?? 0,
             (float) ($transaction->unit_price ?? 0),
             (float) ((((($transaction->quantity_carton ?? 0) > 0) ? ($transaction->quantity_carton ?? 0) : ($transaction->quantity_piece ?? 0)) * ($transaction->unit_price ?? 0))),
-            $this->getStatusLabel($transaction->approval_status),
-            $transaction->approver->name ?? '-',
-            $transaction->approved_at ? $transaction->approved_at->format('d/m/Y H:i') : '-',
-            $transaction->approval_notes ?? '-',
-            $transaction->sales->name ?? '-',
-            $transaction->general_notes ?? '-',
+            $isNewPo ? $this->getStatusLabel($transaction->approval_status) : '',
+            $isNewPo ? ($transaction->approver->name ?? '-') : '',
+            $isNewPo ? ($transaction->approved_at ? $transaction->approved_at->format('d/m/Y H:i') : '-') : '',
+            $isNewPo ? ($transaction->approval_notes ?? '-') : '',
+            $isNewPo ? ($transaction->sales->name ?? '-') : '',
+            $isNewPo ? ($transaction->general_notes ?? '-') : '',
             $isNewPo ? ($transaction->delivery_date ? $transaction->delivery_date->format('d/m/Y') : '-') : '',
         ];
     }
