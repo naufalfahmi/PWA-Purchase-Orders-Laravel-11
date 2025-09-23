@@ -591,6 +591,7 @@
         const salesName = '{{ $transactions->first()->sales->name ?? "Sales" }}';
         const approvalStatus = '{{ $transactions->first()->approval_status }}';
         const approvalNotes = '{{ $transactions->first()->approval_notes ?? "" }}';
+        const approverName = '{{ $transactions->first()->approver->name ?? "Owner" }}';
         
         // Determine status text and symbol based on approval status
         let statusText, statusSymbol;
@@ -611,6 +612,7 @@
         message += 'PO Number: *' + poNumber + '*\n';
         message += 'Total: Rp ' + amount + '\n';
         message += 'Sales: ' + salesName + '\n';
+        message += 'Disetujui oleh: *' + approverName + '*\n';
         
         if (approvalNotes) {
             message += '\nCatatan: ' + approvalNotes + '\n';
