@@ -26,9 +26,30 @@ class ReportsController extends Controller
      */
     public function index(Request $request)
     {
-        $query = SalesTransaction::with(['product', 'supplier', 'sales', 'approver']);
+        // Build grouped-by-PO dataset (same base as PO list)
+        $query = SalesTransaction::select([
+            'po_number',
+            \DB::raw('MAX(transaction_number) as transaction_number'),
+            \DB::raw('MAX(transaction_date) as transaction_date'),
+            \DB::raw('MAX(delivery_date) as delivery_date'),
+            \DB::raw('MAX(sales_id) as sales_id'),
+            \DB::raw('MAX(supplier_id) as supplier_id'),
+            \DB::raw('MAX(approval_status) as approval_status'),
+            \DB::raw('MAX(approved_by) as approved_by'),
+            \DB::raw('MAX(approved_at) as approved_at'),
+            \DB::raw('MAX(approval_notes) as approval_notes'),
+            \DB::raw('MAX(general_notes) as general_notes'),
+            \DB::raw('MAX(order_acc_by) as order_acc_by'),
+            \DB::raw('COUNT(*) as total_items'),
+            \DB::raw('SUM(CASE WHEN quantity_carton > 0 THEN quantity_carton ELSE quantity_piece END) as total_quantity'),
+            \DB::raw('SUM(CASE WHEN quantity_carton > 0 THEN quantity_carton * unit_price ELSE quantity_piece * unit_price END) as total_amount'),
+            \DB::raw('MIN(created_at) as created_at'),
+            \DB::raw('MAX(updated_at) as updated_at')
+        ])
+        ->with(['sales', 'approver', 'supplier'])
+        ->groupBy('po_number');
 
-        // Filter by transaction date range
+        // Filter by transaction date range (pre-group filter)
         if ($request->filled('start_date')) {
             $query->whereDate('transaction_date', '>=', $request->start_date);
         }
@@ -44,12 +65,12 @@ class ReportsController extends Controller
             $query->whereDate('delivery_date', '<=', $request->delivery_end_date);
         }
 
-        // Filter by supplier
+        // Filter by supplier (pre-group filter)
         if ($request->filled('supplier_id')) {
             $query->where('supplier_id', $request->supplier_id);
         }
 
-        // Filter by approval status
+        // Filter by approval status (pre-group filter)
         if ($request->filled('approval_status')) {
             $query->where('approval_status', $request->approval_status);
         }
@@ -59,9 +80,7 @@ class ReportsController extends Controller
             $query->where('po_number', 'like', '%' . $request->po_number . '%');
         }
 
-        $transactions = $query->orderBy('transaction_date', 'desc')
-                            ->orderBy('created_at', 'desc')
-                            ->paginate(20);
+        $transactions = $query->orderBy(\DB::raw('MIN(created_at)'), 'desc')->paginate(20);
 
         // Get filter options
         $suppliers = Supplier::orderBy('nama_supplier')->get();
@@ -72,14 +91,16 @@ class ReportsController extends Controller
         ];
 
         // Calculate summary statistics
-        $summary = $this->calculateSummary($query->get());
-        $monthlyData = $this->getMonthlyData($query->get());
+        $collection = $query->get();
+        $summary = $this->calculateSummary($collection);
+        $monthlyData = $this->getMonthlyData($collection);
         
         // Additional chart data
-        $salesAmountData = $this->getSalesAmountData($query->get());
-        $monthlyAmountData = $this->getMonthlyAmountData($query->get());
-        $topProductsData = $this->getTopProductsData($query->get());
-        $topCategoriesData = $this->getTopCategoriesData($query->get());
+        $salesAmountData = $this->getSalesAmountData($collection);
+        $monthlyAmountData = $this->getMonthlyAmountData($collection);
+        // Top products/categories are not meaningful at PO level; return empty
+        $topProductsData = ['labels' => [], 'values' => []];
+        $topCategoriesData = ['labels' => [], 'values' => []];
 
         return view('reports.index', compact(
             'transactions',
@@ -114,7 +135,28 @@ class ReportsController extends Controller
                 return redirect()->back()->with('error', 'Insufficient permissions');
             }
             
-            $query = SalesTransaction::with(['product', 'supplier', 'sales', 'approver']);
+            // Build grouped-by-PO dataset same as index
+            $query = SalesTransaction::select([
+                'po_number',
+                \DB::raw('MAX(transaction_number) as transaction_number'),
+                \DB::raw('MAX(transaction_date) as transaction_date'),
+                \DB::raw('MAX(delivery_date) as delivery_date'),
+                \DB::raw('MAX(sales_id) as sales_id'),
+                \DB::raw('MAX(supplier_id) as supplier_id'),
+                \DB::raw('MAX(approval_status) as approval_status'),
+                \DB::raw('MAX(approved_by) as approved_by'),
+                \DB::raw('MAX(approved_at) as approved_at'),
+                \DB::raw('MAX(approval_notes) as approval_notes'),
+                \DB::raw('MAX(general_notes) as general_notes'),
+                \DB::raw('MAX(order_acc_by) as order_acc_by'),
+                \DB::raw('COUNT(*) as total_items'),
+                \DB::raw('SUM(CASE WHEN quantity_carton > 0 THEN quantity_carton ELSE quantity_piece END) as total_quantity'),
+                \DB::raw('SUM(CASE WHEN quantity_carton > 0 THEN quantity_carton * unit_price ELSE quantity_piece * unit_price END) as total_amount'),
+                \DB::raw('MIN(created_at) as created_at'),
+                \DB::raw('MAX(updated_at) as updated_at')
+            ])
+            ->with(['sales', 'approver', 'supplier'])
+            ->groupBy('po_number');
 
             // Apply same filters as index
             if ($request->filled('start_date')) {
@@ -139,9 +181,7 @@ class ReportsController extends Controller
                 $query->where('po_number', 'like', '%' . $request->po_number . '%');
             }
 
-            $transactions = $query->orderBy('transaction_date', 'desc')
-                                ->orderBy('created_at', 'desc')
-                                ->get();
+            $transactions = $query->orderBy(\DB::raw('MIN(created_at)'), 'desc')->get();
 
             \Log::info('Excel export data loaded', ['count' => $transactions->count()]);
 
@@ -151,7 +191,7 @@ class ReportsController extends Controller
                 'record_count' => $transactions->count()
             ]);
             
-            return Excel::download(new \App\Exports\POReportExport($transactions), $fileName);
+            return Excel::download(new \App\Exports\POReportExport($transactions, true), $fileName);
         } catch (\Exception $e) {
             \Log::error('Excel export failed', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
             return response()->json(['error' => 'Export failed: ' . $e->getMessage()], 500);
@@ -178,7 +218,28 @@ class ReportsController extends Controller
                 return redirect()->back()->with('error', 'Insufficient permissions');
             }
             
-            $query = SalesTransaction::with(['product', 'supplier', 'sales', 'approver']);
+            // Build grouped-by-PO dataset same as index
+            $query = SalesTransaction::select([
+                'po_number',
+                \DB::raw('MAX(transaction_number) as transaction_number'),
+                \DB::raw('MAX(transaction_date) as transaction_date'),
+                \DB::raw('MAX(delivery_date) as delivery_date'),
+                \DB::raw('MAX(sales_id) as sales_id'),
+                \DB::raw('MAX(supplier_id) as supplier_id'),
+                \DB::raw('MAX(approval_status) as approval_status'),
+                \DB::raw('MAX(approved_by) as approved_by'),
+                \DB::raw('MAX(approved_at) as approved_at'),
+                \DB::raw('MAX(approval_notes) as approval_notes'),
+                \DB::raw('MAX(general_notes) as general_notes'),
+                \DB::raw('MAX(order_acc_by) as order_acc_by'),
+                \DB::raw('COUNT(*) as total_items'),
+                \DB::raw('SUM(CASE WHEN quantity_carton > 0 THEN quantity_carton ELSE quantity_piece END) as total_quantity'),
+                \DB::raw('SUM(CASE WHEN quantity_carton > 0 THEN quantity_carton * unit_price ELSE quantity_piece * unit_price END) as total_amount'),
+                \DB::raw('MIN(created_at) as created_at'),
+                \DB::raw('MAX(updated_at) as updated_at')
+            ])
+            ->with(['sales', 'approver', 'supplier'])
+            ->groupBy('po_number');
 
             // Apply same filters as index
             if ($request->filled('start_date')) {
@@ -203,9 +264,7 @@ class ReportsController extends Controller
                 $query->where('po_number', 'like', '%' . $request->po_number . '%');
             }
 
-            $transactions = $query->orderBy('transaction_date', 'desc')
-                                ->orderBy('created_at', 'desc')
-                                ->get();
+            $transactions = $query->orderBy(\DB::raw('MIN(created_at)'), 'desc')->get();
 
             \Log::info('PDF export data loaded', ['count' => $transactions->count()]);
 
@@ -253,14 +312,35 @@ class ReportsController extends Controller
      */
     private function calculateSummary($transactions)
     {
-        $totalTransactions = $transactions->count();
-        $totalAmount = $transactions->sum('total_amount');
-        $totalQuantity = $transactions->sum('total_quantity_piece');
-        
-        $statusCounts = $transactions->groupBy('approval_status')->map->count();
-        
-        $supplierCounts = $transactions->groupBy('supplier.nama_supplier')->map->count();
-        
+        // Group by unique PO number to avoid double-counting per PO
+        $groupedByPO = $transactions->groupBy('po_number');
+
+        // Total transaksi should be by number PO (unique PO count)
+        $totalTransactions = $groupedByPO->count();
+
+        // Aggregate totals across unique POs
+        $totalAmount = $groupedByPO->map(function ($poGroup) {
+            return $poGroup->sum('total_amount');
+        })->sum();
+
+        $totalQuantity = $groupedByPO->map(function ($poGroup) {
+            return $poGroup->sum('total_quantity_piece');
+        })->sum();
+
+        // Status counts by PO: use the most frequent status within the PO
+        $statusCounts = $groupedByPO->map(function ($poGroup) {
+            return $poGroup->groupBy('approval_status')->map->count()->sortDesc()->keys()->first();
+        })->groupBy(function ($status) {
+            return $status;
+        })->map->count();
+
+        // Supplier counts by PO (count unique POs per supplier)
+        $supplierCounts = $groupedByPO->map(function ($poGroup) {
+            return optional($poGroup->first()->supplier)->nama_supplier ?: 'N/A';
+        })->groupBy(function ($supplierName) {
+            return $supplierName;
+        })->map->count();
+
         return [
             'total_transactions' => $totalTransactions,
             'total_amount' => $totalAmount,
@@ -272,21 +352,29 @@ class ReportsController extends Controller
 
     public function getMonthlyData($transactions)
     {
-        // Get last 6 months data
+        // Get last 6 months data, counting unique PO numbers per month
         $months = [];
         $values = [];
-        
+
+        // Determine a representative date per PO (use earliest transaction_date in the PO)
+        $poWithDate = $transactions->groupBy('po_number')->map(function ($poGroup) {
+            return $poGroup->filter(function ($t) {
+                return !empty($t->transaction_date);
+            })->sortBy('transaction_date')->first();
+        })->filter();
+
         for ($i = 5; $i >= 0; $i--) {
             $date = now()->subMonths($i);
             $monthName = $date->format('M Y');
-            $count = $transactions->where('transaction_date', '>=', $date->startOfMonth())
-                                 ->where('transaction_date', '<=', $date->endOfMonth())
-                                 ->count();
-            
+
+            $count = $poWithDate->filter(function ($t) use ($date) {
+                return $t->transaction_date >= $date->copy()->startOfMonth() && $t->transaction_date <= $date->copy()->endOfMonth();
+            })->count();
+
             $months[] = $monthName;
             $values[] = $count;
         }
-        
+
         return [
             'labels' => $months,
             'values' => $values

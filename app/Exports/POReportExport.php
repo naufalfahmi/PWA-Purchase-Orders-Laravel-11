@@ -20,10 +20,12 @@ use Carbon\Carbon;
 class POReportExport implements FromCollection, WithHeadings, WithMapping, WithStyles, WithColumnWidths, WithTitle, WithEvents
 {
     protected $transactions;
+    protected $groupedByPO;
 
-    public function __construct($transactions)
+    public function __construct($transactions, $groupedByPO = false)
     {
         $this->transactions = $transactions;
+        $this->groupedByPO = (bool) $groupedByPO;
     }
 
     public function collection()
@@ -33,6 +35,23 @@ class POReportExport implements FromCollection, WithHeadings, WithMapping, WithS
 
     public function headings(): array
     {
+        if ($this->groupedByPO) {
+            return [
+                'No',
+                'Tanggal Transaksi',
+                'Nomor PO',
+                'Supplier',
+                'Sales',
+                'Total Items',
+                'Total Quantity',
+                'Total Amount',
+                'Status Approval',
+                'Diapprove Oleh',
+                'Tanggal Approval',
+                'Catatan Approval',
+                'Catatan Umum'
+            ];
+        }
         return [
             'No',
             'Tanggal Transaksi',
@@ -60,6 +79,24 @@ class POReportExport implements FromCollection, WithHeadings, WithMapping, WithS
         static $counter = 0;
         $counter++;
 
+        if ($this->groupedByPO) {
+            return [
+                $counter,
+                $transaction->transaction_date ? $transaction->transaction_date->format('d/m/Y') : '-',
+                $transaction->po_number ?? '-',
+                optional($transaction->supplier)->nama_supplier ?? '-',
+                optional($transaction->sales)->name ?? '-',
+                (int) ($transaction->total_items ?? 0),
+                (int) ($transaction->total_quantity ?? 0),
+                (float) ($transaction->total_amount ?? 0),
+                $this->getStatusLabel($transaction->approval_status),
+                optional($transaction->approver)->name ?? '-',
+                $transaction->approved_at ? \Carbon\Carbon::parse($transaction->approved_at)->format('d/m/Y H:i') : '-',
+                $transaction->approval_notes ?? '-',
+                $transaction->general_notes ?? '-',
+            ];
+        }
+
         return [
             $counter,
             $transaction->transaction_date ? $transaction->transaction_date->format('d/m/Y') : '-',
@@ -71,8 +108,8 @@ class POReportExport implements FromCollection, WithHeadings, WithMapping, WithS
             $transaction->quantity_carton ?? 0,
             $transaction->quantity_piece ?? 0,
             $transaction->total_quantity_piece ?? 0,
-            number_format($transaction->unit_price ?? 0, 0, ',', '.'),
-            number_format($transaction->total_amount ?? 0, 0, ',', '.'),
+            (float) ($transaction->unit_price ?? 0),
+            (float) ($transaction->total_amount ?? 0),
             $this->getStatusLabel($transaction->approval_status),
             $transaction->approver->name ?? '-',
             $transaction->approved_at ? $transaction->approved_at->format('d/m/Y H:i') : '-',
@@ -85,7 +122,8 @@ class POReportExport implements FromCollection, WithHeadings, WithMapping, WithS
     public function styles(Worksheet $sheet)
     {
         // Header styles
-        $sheet->getStyle('A1:R1')->applyFromArray([
+        $lastHeaderColumn = $this->groupedByPO ? 'M' : 'R';
+        $sheet->getStyle('A1:' . $lastHeaderColumn . '1')->applyFromArray([
             'font' => [
                 'bold' => true,
                 'color' => ['rgb' => 'FFFFFF']
@@ -108,7 +146,7 @@ class POReportExport implements FromCollection, WithHeadings, WithMapping, WithS
 
         // Data rows styles
         $lastRow = $this->transactions->count() + 1;
-        $sheet->getStyle('A2:R' . $lastRow)->applyFromArray([
+        $sheet->getStyle('A2:' . $lastHeaderColumn . $lastRow)->applyFromArray([
             'borders' => [
                 'allBorders' => [
                     'borderStyle' => Border::BORDER_THIN,
@@ -123,7 +161,7 @@ class POReportExport implements FromCollection, WithHeadings, WithMapping, WithS
         // Alternating row colors
         for ($row = 2; $row <= $lastRow; $row++) {
             if ($row % 2 == 0) {
-                $sheet->getStyle('A' . $row . ':R' . $row)->applyFromArray([
+                $sheet->getStyle('A' . $row . ':' . $lastHeaderColumn . $row)->applyFromArray([
                     'fill' => [
                         'fillType' => Fill::FILL_SOLID,
                         'startColor' => ['rgb' => 'f8fafc']
@@ -133,11 +171,34 @@ class POReportExport implements FromCollection, WithHeadings, WithMapping, WithS
         }
 
         // Number formatting for currency columns
-        $sheet->getStyle('K2:L' . $lastRow)->getNumberFormat()->setFormatCode('#,##0');
+        if ($this->groupedByPO) {
+            // Total Amount at column H
+            $sheet->getStyle('H2:H' . $lastRow)->getNumberFormat()->setFormatCode('#,##0');
+        } else {
+            // Unit Price and Total Harga
+            $sheet->getStyle('K2:L' . $lastRow)->getNumberFormat()->setFormatCode('#,##0');
+        }
     }
 
     public function columnWidths(): array
     {
+        if ($this->groupedByPO) {
+            return [
+                'A' => 5,   // No
+                'B' => 15,  // Tanggal Transaksi
+                'C' => 20,  // Nomor PO
+                'D' => 25,  // Supplier
+                'E' => 20,  // Sales
+                'F' => 12,  // Total Items
+                'G' => 15,  // Total Quantity
+                'H' => 15,  // Total Amount
+                'I' => 18,  // Status Approval
+                'J' => 20,  // Diapprove Oleh
+                'K' => 18,  // Tanggal Approval
+                'L' => 25,  // Catatan Approval
+                'M' => 30,  // Catatan Umum
+            ];
+        }
         return [
             'A' => 5,   // No
             'B' => 15,  // Tanggal Transaksi
@@ -170,7 +231,7 @@ class POReportExport implements FromCollection, WithHeadings, WithMapping, WithS
         return [
             AfterSheet::class => function(AfterSheet $event) {
                 $sheet = $event->sheet->getDelegate();
-                $lastDataColumn = 'R';
+                $lastDataColumn = $this->groupedByPO ? 'M' : 'R';
 
                 // Insert header template at the top (4-5 rows depending on delivery date)
                 $headerRows = 4;
@@ -255,7 +316,12 @@ class POReportExport implements FromCollection, WithHeadings, WithMapping, WithS
                 // Add total row
                 $totalRow = $lastRow + 2;
                 $sheet->setCellValue('A' . $totalRow, 'TOTAL KESELURUHAN');
-                $sheet->setCellValue('L' . $totalRow, $this->transactions->sum('total_amount'));
+                // Total amount column differs between grouped and detailed
+                if ($this->groupedByPO) {
+                    $sheet->setCellValue('H' . $totalRow, $this->transactions->sum('total_amount'));
+                } else {
+                    $sheet->setCellValue('L' . $totalRow, $this->transactions->sum('total_amount'));
+                }
                 
                 // Style the total row
                 $sheet->getStyle('A' . $totalRow . ':' . $lastDataColumn . $totalRow)->applyFromArray([
@@ -277,8 +343,10 @@ class POReportExport implements FromCollection, WithHeadings, WithMapping, WithS
 
                 // Add summary info
                 $summaryRow = $totalRow + 2;
-                $sheet->setCellValue('A' . $summaryRow, 'Total Transaksi: ' . $this->transactions->count());
-                $sheet->setCellValue('A' . ($summaryRow + 1), 'Total Quantity (PC): ' . number_format($this->transactions->sum('total_quantity_piece'), 0, ',', '.'));
+                $totalTransactions = $this->groupedByPO ? $this->transactions->count() : $this->transactions->count();
+                $totalQuantity = $this->groupedByPO ? ($this->transactions->sum('total_quantity')) : ($this->transactions->sum('total_quantity_piece'));
+                $sheet->setCellValue('A' . $summaryRow, 'Total Transaksi (PO): ' . $totalTransactions);
+                $sheet->setCellValue('A' . ($summaryRow + 1), 'Total Quantity (PC): ' . number_format($totalQuantity, 0, ',', '.'));
                 $sheet->setCellValue('A' . ($summaryRow + 2), 'Dicetak pada: ' . now()->format('d F Y H:i:s'));
 
                 // Auto-fit columns
