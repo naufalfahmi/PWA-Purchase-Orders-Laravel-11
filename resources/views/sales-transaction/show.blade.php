@@ -228,8 +228,10 @@
         @endif
 
         <div class="flex justify-center space-x-3">
-            <a href="{{ route('sales-transaction.index') }}" class="btn-secondary">Kembali ke Daftar PO</a>
-            @php($poNumber = $transactions->first()->po_number ?? null)
+            <a href="{{ route('sales-transaction.index') }}" class="btn-secondary">Kembali</a>
+            @php
+                $poNumber = $transactions->first()->po_number ?? null;
+            @endphp
             @if($poNumber)
                 <a href="{{ route('sales-transaction.edit-po', $poNumber) }}" class="btn-primary">Edit PO</a>
                 @php
@@ -264,10 +266,10 @@
         let confirmationMessage = '';
         if (action === 'approve') {
             confirmationMessage = 'Apakah Anda yakin ingin menyetujui Purchase Order ini?';
-            form.action = '{{ route("sales-transaction.approve", $transactions->first()) }}';
+            form.action = '{{ route("sales-transaction.approve-po", $transactions->first()->po_number) }}';
         } else if (action === 'reject') {
             confirmationMessage = 'Apakah Anda yakin ingin menolak Purchase Order ini?';
-            form.action = '{{ route("sales-transaction.reject", $transactions->first()) }}';
+            form.action = '{{ route("sales-transaction.reject-po", $transactions->first()->po_number) }}';
         }
         
         if (confirm(confirmationMessage)) {
