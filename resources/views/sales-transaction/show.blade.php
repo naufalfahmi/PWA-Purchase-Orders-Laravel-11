@@ -312,7 +312,16 @@
             message += '\nCatatan: ' + notes + '\n';
         }
         
-        message += '\nWaktu: ' + new Date().toLocaleString('id-ID') + '\n';
+        message += '\nWaktu: ' + new Date().toLocaleString('id-ID', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            timeZone: 'Asia/Jakarta'
+        }) + '\n';
         message += '\nTerima kasih!';
         
         let cleanPhone = salesPhone.replace(/\D/g, '');
@@ -639,7 +648,16 @@
             message += '\nCatatan: ' + approvalNotes + '\n';
         }
         
-        message += '\nWaktu: ' + new Date().toLocaleString('id-ID') + '\n';
+        message += '\nWaktu: ' + new Date().toLocaleString('id-ID', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            timeZone: 'Asia/Jakarta'
+        }) + '\n';
         message += '\nTerima kasih!';
         
         // Open WhatsApp with the message
