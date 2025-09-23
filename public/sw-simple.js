@@ -1,4 +1,4 @@
-const CACHE_NAME = 'admin-pwa-v9';
+const CACHE_NAME = 'munah-pwa-v10';
 const urlsToCache = [
   // Static assets only - no pages that require auth
   '/build/assets/app-CR2TckGB.css',

@@ -3,7 +3,7 @@
  */
 class SmartCacheManager {
     constructor() {
-        this.cacheName = 'admin-pwa-v7';
+        this.cacheName = 'munah-pwa-v10';
         this.isRunning = false;
         this.lastCheck = localStorage.getItem('lastCacheCheck') || 0;
         this.checkInterval = 5 * 60 * 1000; // Check every 5 minutes
@@ -150,7 +150,7 @@ class SmartCacheManager {
             
             const cacheNames = await caches.keys();
             const oldCaches = cacheNames.filter(name => 
-                name.startsWith('admin-pwa-') && name !== this.cacheName
+                name.startsWith('munah-pwa-') && name !== this.cacheName
             );
             
             await Promise.all(oldCaches.map(name => {
