@@ -263,33 +263,44 @@
                 </tr>
             </thead>
             <tbody>
-                @foreach($transactions as $index => $transaction)
-                    <tr>
-                        <td class="text-center">{{ $index + 1 }}</td>
-                        <td>{{ $transaction->transaction_date ? $transaction->transaction_date->format('d/m/Y') : '-' }}</td>
-                        <td>{{ $transaction->delivery_date ? $transaction->delivery_date->format('d/m/Y') : '-' }}</td>
-                        <td style="font-weight: bold; color: #2563eb;">{{ $transaction->po_number ?? '-' }}</td>
-                        <td>{{ $transaction->supplier->nama_supplier ?? '-' }}</td>
-                        <td>{{ $transaction->product->name ?? '-' }}</td>
-                        <td>{{ $transaction->product->category ?? '-' }}</td>
-                        <td class="text-center">{{ $transaction->quantity_carton ?? 0 }}</td>
-                        <td class="text-center">{{ $transaction->quantity_piece ?? 0 }}</td>
-                        
-                        <td class="text-right">Rp {{ number_format($transaction->unit_price ?? 0, 0, ',', '.') }}</td>
-                        <td class="text-right">Rp {{ number_format((((($transaction->quantity_carton ?? 0) > 0 ? ($transaction->quantity_carton ?? 0) : ($transaction->quantity_piece ?? 0)) * ($transaction->unit_price ?? 0))), 0, ',', '.') }}</td>
-                        <td class="text-center">
-                            @if($transaction->approval_status == 'pending')
-                                <span class="status-pending">Pending</span>
-                            @elseif($transaction->approval_status == 'approved')
-                                <span class="status-approved">Approved</span>
-                            @elseif($transaction->approval_status == 'rejected')
-                                <span class="status-rejected">Rejected</span>
-                            @else
-                                <span class="status-pending">{{ ucfirst($transaction->approval_status) }}</span>
+                @php $poIndex = 0; @endphp
+                @foreach($transactions->groupBy('po_number') as $poNumber => $poGroup)
+                    @php 
+                        $poIndex++;
+                        $rowspan = $poGroup->count();
+                        $first = $poGroup->first();
+                    @endphp
+                    @foreach($poGroup as $rowIndex => $transaction)
+                        <tr>
+                            @if($rowIndex === 0)
+                                <td class="text-center" rowspan="{{ $rowspan }}">{{ $poIndex }}</td>
+                                <td rowspan="{{ $rowspan }}">{{ $first->transaction_date ? $first->transaction_date->format('d/m/Y') : '-' }}</td>
+                                <td rowspan="{{ $rowspan }}">{{ $first->delivery_date ? $first->delivery_date->format('d/m/Y') : '-' }}</td>
+                                <td rowspan="{{ $rowspan }}" style="font-weight: bold; color: #2563eb;">{{ $poNumber ?? '-' }}</td>
+                                <td rowspan="{{ $rowspan }}">{{ optional($first->supplier)->nama_supplier ?? '-' }}</td>
                             @endif
-                        </td>
-                        <td>{{ $transaction->approver->name ?? '-' }}</td>
-                    </tr>
+                            <td>{{ $transaction->product->name ?? '-' }}</td>
+                            <td>{{ $transaction->product->category ?? '-' }}</td>
+                            <td class="text-center">{{ $transaction->quantity_carton ?? 0 }}</td>
+                            <td class="text-center">{{ $transaction->quantity_piece ?? 0 }}</td>
+                            <td class="text-right">Rp {{ number_format($transaction->unit_price ?? 0, 0, ',', '.') }}</td>
+                            <td class="text-right">Rp {{ number_format((((($transaction->quantity_carton ?? 0) > 0 ? ($transaction->quantity_carton ?? 0) : ($transaction->quantity_piece ?? 0)) * ($transaction->unit_price ?? 0))), 0, ',', '.') }}</td>
+                            @if($rowIndex === 0)
+                                <td class="text-center" rowspan="{{ $rowspan }}">
+                                    @if($first->approval_status == 'pending')
+                                        <span class="status-pending">Pending</span>
+                                    @elseif($first->approval_status == 'approved')
+                                        <span class="status-approved">Approved</span>
+                                    @elseif($first->approval_status == 'rejected')
+                                        <span class="status-rejected">Rejected</span>
+                                    @else
+                                        <span class="status-pending">{{ ucfirst($first->approval_status) }}</span>
+                                    @endif
+                                </td>
+                                <td rowspan="{{ $rowspan }}">{{ optional($first->approver)->name ?? '-' }}</td>
+                            @endif
+                        </tr>
+                    @endforeach
                 @endforeach
             </tbody>
         </table>
