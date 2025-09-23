@@ -21,11 +21,23 @@
     
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     
+    <!-- Fallback CSS untuk production jika Vite tidak tersedia -->
+    @if(app()->environment('production'))
+        <link rel="stylesheet" href="{{ asset('build/assets/app-CP0OoLXE.css') }}">
+        <script src="{{ asset('build/assets/app-DTZ9Twbo.js') }}" defer></script>
+    @endif
+    
+    <!-- Production Fallback CSS - Comprehensive styling -->
+    <link rel="stylesheet" href="{{ asset('css/production-fallback.css') }}">
+    
     <!-- Local Fonts -->
     <link rel="stylesheet" href="{{ asset('css/inter-fonts.css') }}">
     
     <!-- Fallback CSS untuk mobile -->
     <link rel="stylesheet" href="{{ asset('css/mobile-fallback.css') }}" media="screen and (max-width: 768px)">
+    
+    <!-- Production Fallback JavaScript -->
+    <script src="{{ asset('js/production-fallback.js') }}" defer></script>
     
     <style>
         /* Fallback CSS untuk mobile - memastikan styling tetap berfungsi */
