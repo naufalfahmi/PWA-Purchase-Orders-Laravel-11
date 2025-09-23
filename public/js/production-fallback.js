@@ -5,7 +5,7 @@
 
 // Check if main app is loaded
 if (typeof window.appLoaded === 'undefined') {
-    console.log('Loading production fallback JavaScript...');
+        // console.log('Loading production fallback JavaScript...');
     
     // Basic DOM utilities
     window.DOMUtils = {
@@ -199,7 +199,7 @@ if (typeof window.appLoaded === 'undefined') {
     // Initialize basic functionality when DOM is ready
     DOMUtils.ready(function() {
         // Initialize any basic functionality here
-        console.log('Production fallback JavaScript loaded');
+        // console.log('Production fallback JavaScript loaded');
         
         // Add basic event listeners for common interactions
         const buttons = document.querySelectorAll('button[type="submit"]');

@@ -333,8 +333,8 @@
             cleanPhone = '62' + cleanPhone;
         }
         
-        console.log('Attempting to open WhatsApp for:', cleanPhone);
-        console.log('Message:', message);
+        // console.log('Attempting to open WhatsApp for:', cleanPhone);
+        // console.log('Message:', message);
         
         // Try multiple methods to open WhatsApp
         return tryOpenWhatsApp(message, cleanPhone);
@@ -344,7 +344,7 @@
         // Clean the message to avoid encoding issues
         const cleanMessage = message.replace(/[\u200B-\u200D\uFEFF]/g, ''); // Remove zero-width characters
         
-        console.log('Opening WhatsApp with clean message:', cleanMessage);
+        // console.log('Opening WhatsApp with clean message:', cleanMessage);
         updateWhatsAppStatus('🚀 Opening WhatsApp...', 'info');
         
         // Try to open WhatsApp app first
@@ -354,11 +354,11 @@
     }
     
     function tryOpenWhatsAppApp(message, cleanPhone) {
-        console.log('Attempting to open WhatsApp app...');
+        // console.log('Attempting to open WhatsApp app...');
         
         // Detect if we're on mobile or desktop
         const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-        console.log('Device type:', isMobile ? 'Mobile' : 'Desktop');
+        // console.log('Device type:', isMobile ? 'Mobile' : 'Desktop');
         
         if (isMobile) {
             tryOpenWhatsAppMobile(message, cleanPhone);
@@ -368,12 +368,12 @@
     }
     
     function tryOpenWhatsAppMobile(message, cleanPhone) {
-        console.log('Trying mobile WhatsApp app...');
+        // console.log('Trying mobile WhatsApp app...');
         updateWhatsAppStatus('📱 Mobile detected - trying WhatsApp app...', 'info');
         
         try {
             const appUrl = `whatsapp://send?phone=${cleanPhone}&text=${encodeURIComponent(message)}`;
-            console.log('Trying WhatsApp mobile app:', appUrl);
+        // console.log('Trying WhatsApp mobile app:', appUrl);
             
             // Create a temporary link and try to open it
             const link = document.createElement('a');
@@ -389,14 +389,14 @@
             
             const handleBlur = () => {
                 focusLost = true;
-                console.log('Page lost focus - WhatsApp app likely opened');
+        // console.log('Page lost focus - WhatsApp app likely opened');
                 updateWhatsAppStatus('📱 WhatsApp app opened successfully!', 'success');
             };
             
             const handleFocus = () => {
                 if (focusLost) {
                     appOpened = true;
-                    console.log('WhatsApp app opened successfully (mobile)');
+        // console.log('WhatsApp app opened successfully (mobile)');
                     document.removeEventListener('blur', handleBlur);
                     document.removeEventListener('focus', handleFocus);
                 }
@@ -409,7 +409,7 @@
             // If no app opened within 3 seconds, try web fallback
             setTimeout(() => {
                 if (!appOpened && !focusLost) {
-                    console.log('WhatsApp mobile app not available, trying web version');
+        // console.log('WhatsApp mobile app not available, trying web version');
                     updateWhatsAppStatus('📱 WhatsApp app not detected, opening web version...', 'warning');
                     window.removeEventListener('blur', handleBlur);
                     window.removeEventListener('focus', handleFocus);
@@ -424,7 +424,7 @@
     }
     
     function tryOpenWhatsAppDesktop(message, cleanPhone) {
-        console.log('Trying desktop WhatsApp...');
+        // console.log('Trying desktop WhatsApp...');
         updateWhatsAppStatus('💻 Desktop detected - opening WhatsApp Web...', 'info');
         
         // On desktop, try WhatsApp Web directly
@@ -432,12 +432,12 @@
     }
     
     function tryOpenWhatsAppWeb(message, cleanPhone) {
-        console.log('Opening WhatsApp web version...');
+        // console.log('Opening WhatsApp web version...');
         
         // Method 2: Try wa.me with timeout detection
         try {
             const waUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`;
-            console.log('Trying wa.me:', waUrl);
+        // console.log('Trying wa.me:', waUrl);
             
             // Create a hidden iframe with allow-downloads sandbox attribute
             const iframe = document.createElement('iframe');
@@ -451,10 +451,10 @@
                 const win = window.open(waUrl, '_blank', 'noopener,noreferrer');
                 
                 if (win) {
-                    console.log('WhatsApp web opened successfully');
+        // console.log('WhatsApp web opened successfully');
                     updateWhatsAppStatus('💻 WhatsApp Web opened successfully!', 'success');
                 } else {
-                    console.log('WhatsApp web blocked, trying fallback');
+        // console.log('WhatsApp web blocked, trying fallback');
                     updateWhatsAppStatus('⚠️ WhatsApp Web blocked, trying fallback...', 'warning');
                     tryFallbackMethods(message, cleanPhone);
                 }
@@ -478,11 +478,11 @@
         // Method 2: Try web.whatsapp.com
         try {
             const webUrl = `https://web.whatsapp.com/send?phone=${cleanPhone}&text=${encodeURIComponent(message)}`;
-            console.log('Trying web.whatsapp.com:', webUrl);
+        // console.log('Trying web.whatsapp.com:', webUrl);
             
             const win = window.open(webUrl, '_blank');
             if (win) {
-                console.log('web.whatsapp.com opened');
+        // console.log('web.whatsapp.com opened');
                 return true;
             }
         } catch (e) {
@@ -492,11 +492,11 @@
         // Method 3: Try WhatsApp protocol
         try {
             const protocolUrl = `whatsapp://send?phone=${cleanPhone}&text=${encodeURIComponent(message)}`;
-            console.log('Trying whatsapp:// protocol:', protocolUrl);
+        // console.log('Trying whatsapp:// protocol:', protocolUrl);
             
             window.location.href = protocolUrl;
             setTimeout(() => {
-                console.log('WhatsApp protocol attempted');
+        // console.log('WhatsApp protocol attempted');
             }, 500);
             return true;
             
@@ -678,7 +678,7 @@
             cleanPhone = '62' + cleanPhone;
         }
         
-        console.log('Resending WhatsApp notification to:', cleanPhone);
+        // console.log('Resending WhatsApp notification to:', cleanPhone);
         updateWhatsAppStatus('📤 Mengirim ulang notifikasi WhatsApp...', 'info');
         
         // Try to open WhatsApp app first

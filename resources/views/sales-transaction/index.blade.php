@@ -1183,12 +1183,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     mutations.forEach((mutation) => {
                         if (mutation.type === 'childList') {
                             const offlineData = container.querySelectorAll('[data-offline="true"]');
-                            console.log('🔍 Container changed - offline data count:', offlineData.length);
+        // console.log('🔍 Container changed - offline data count:', offlineData.length);
                             
                             // Only re-integrate if there's offline data in storage but none in DOM
                             const storageData = window.offlineStorage.getDataByType('purchase_order');
                             if (storageData.length > 0 && offlineData.length === 0) {
-                                console.log('⚠️ Offline data removed from DOM, re-integrating...');
+        // console.log('⚠️ Offline data removed from DOM, re-integrating...');
                                 setTimeout(() => {
                                     integrateOfflineData();
                                 }, 100);
@@ -1202,7 +1202,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     subtree: true
                 });
                 
-                console.log('👀 Mutation observer set up for container');
+        // console.log('👀 Mutation observer set up for container');
             }
         }, 1000);
     }
@@ -1211,12 +1211,12 @@ document.addEventListener('DOMContentLoaded', function() {
     let isIntegrating = false;
     function integrateOfflineData() {
         if (!window.offlineStorage) {
-            console.log('Offline storage not available');
+        // console.log('Offline storage not available');
             return;
         }
         
         if (isIntegrating) {
-            console.log('⏳ Already integrating, skipping...');
+        // console.log('⏳ Already integrating, skipping...');
             return;
         }
         
@@ -1227,7 +1227,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Check if container exists
         if (!container) {
-            console.log('❌ Container not found, retrying in 500ms...');
+        // console.log('❌ Container not found, retrying in 500ms...');
             setTimeout(() => {
                 integrateOfflineData();
             }, 500);
@@ -1236,9 +1236,9 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Debug: Check all offline data
         const allOfflineData = window.offlineStorage.getOfflineData();
-        console.log('🔍 All offline data:', allOfflineData);
-        console.log('🔍 Purchase order data:', offlineData);
-        console.log('🔍 Debug offline data:', {
+        // console.log('🔍 All offline data:', allOfflineData);
+        // console.log('🔍 Purchase order data:', offlineData);
+        // console.log('🔍 Debug offline data:', {
             offlineData: offlineData,
             length: offlineData.length,
             container: container
@@ -1246,7 +1246,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Check if offline data already exists to prevent duplication
         const existingOfflineData = container.querySelectorAll('[data-offline="true"]');
-        console.log('🔍 Existing offline data elements:', existingOfflineData.length);
+        // console.log('🔍 Existing offline data elements:', existingOfflineData.length);
         
         // More strict duplication check - check by PO number and ID
         if (existingOfflineData.length > 0) {
@@ -1255,23 +1255,23 @@ document.addEventListener('DOMContentLoaded', function() {
             const newPoNumbers = offlineData.map(item => item.data.po_number);
             const newIds = offlineData.map(item => item.id);
             
-            console.log('🔍 Existing PO numbers:', existingPoNumbers);
-            console.log('🔍 New PO numbers:', newPoNumbers);
-            console.log('🔍 Existing IDs:', existingIds);
-            console.log('🔍 New IDs:', newIds);
+        // console.log('🔍 Existing PO numbers:', existingPoNumbers);
+        // console.log('🔍 New PO numbers:', newPoNumbers);
+        // console.log('🔍 Existing IDs:', existingIds);
+        // console.log('🔍 New IDs:', newIds);
             
             // Check if any new PO numbers or IDs already exist
             const hasDuplicatePOs = newPoNumbers.some(poNumber => existingPoNumbers.includes(poNumber));
             const hasDuplicateIds = newIds.some(id => existingIds.includes(id));
             
             if (hasDuplicatePOs || hasDuplicateIds) {
-                console.log('Offline data already exists (duplicate PO numbers or IDs), skipping integration');
+        // console.log('Offline data already exists (duplicate PO numbers or IDs), skipping integration');
                 return;
             }
         }
         
         if (offlineData.length > 0) {
-            console.log('📱 Integrating offline data:', offlineData.length, 'items');
+        // console.log('📱 Integrating offline data:', offlineData.length, 'items');
             // Create offline data HTML
             const offlineHTML = offlineData.map(item => {
                 // Aggregate totals across all products in the offline payload
@@ -1432,19 +1432,19 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Insert offline data at the beginning of the container
             container.insertAdjacentHTML('afterbegin', offlineHTML);
-            console.log('✅ Offline data inserted successfully');
+        // console.log('✅ Offline data inserted successfully');
             
             // Monitor if data gets removed
             setTimeout(() => {
                 const checkOfflineData = container.querySelectorAll('[data-offline="true"]');
-                console.log('🔍 Check after 2 seconds - offline data count:', checkOfflineData.length);
+        // console.log('🔍 Check after 2 seconds - offline data count:', checkOfflineData.length);
                 if (checkOfflineData.length === 0) {
-                    console.log('⚠️ Offline data disappeared! Re-integrating...');
+        // console.log('⚠️ Offline data disappeared! Re-integrating...');
                     integrateOfflineData();
                 }
             }, 2000);
         } else {
-            console.log('ℹ️ No offline data to integrate');
+        // console.log('ℹ️ No offline data to integrate');
         }
         
         // Reset integration flag
@@ -1453,13 +1453,13 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Listen for offline data updates
     window.addEventListener('offlineDataUpdated', function(event) {
-        console.log('📱 Offline data updated event received:', event.detail);
+        // console.log('📱 Offline data updated event received:', event.detail);
         integrateOfflineData();
     });
     
     // Listen for sync completion to remove synced data from DOM
     window.addEventListener('offlineDataSynced', function(event) {
-        console.log('🔄 Offline data synced event received:', event.detail);
+        // console.log('🔄 Offline data synced event received:', event.detail);
         const syncedIds = (event && event.detail && event.detail.syncedIds) ? event.detail.syncedIds : [];
         
         // Remove synced items from DOM
@@ -1467,7 +1467,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const element = document.querySelector(`[data-offline-id="${id}"]`);
             if (element) {
                 element.remove();
-                console.log(`🗑️ Removed synced item from DOM: ${id}`);
+        // console.log(`🗑️ Removed synced item from DOM: ${id}`);
             }
         });
         if (syncedIds.length > 0) {
@@ -1496,11 +1496,11 @@ document.addEventListener('DOMContentLoaded', function() {
     window.clearOfflineData = function() {
         if (window.offlineStorage) {
             window.offlineStorage.clearAllData();
-            console.log('🧹 All offline data cleared');
+        // console.log('🧹 All offline data cleared');
             // Remove existing offline data from DOM
             const existingOfflineData = document.querySelectorAll('[data-offline="true"]');
             existingOfflineData.forEach(el => el.remove());
-            console.log('🧹 Removed', existingOfflineData.length, 'offline elements from DOM');
+        // console.log('🧹 Removed', existingOfflineData.length, 'offline elements from DOM');
         }
     };
     
@@ -1508,25 +1508,25 @@ document.addEventListener('DOMContentLoaded', function() {
         if (window.offlineStorage) {
             const allData = window.offlineStorage.getOfflineData();
             const poData = window.offlineStorage.getDataByType('purchase_order');
-            console.log('🔍 Debug Results:');
-            console.log('- All offline data:', allData);
-            console.log('- Purchase order data:', poData);
-            console.log('- Total items:', allData.length);
-            console.log('- PO items:', poData.length);
+        // console.log('🔍 Debug Results:');
+        // console.log('- All offline data:', allData);
+        // console.log('- Purchase order data:', poData);
+        // console.log('- Total items:', allData.length);
+        // console.log('- PO items:', poData.length);
             
             // Check localStorage directly
             const rawData = localStorage.getItem('offlineData');
-            console.log('- Raw localStorage:', rawData);
+        // console.log('- Raw localStorage:', rawData);
             
             // Check DOM
             const container = document.getElementById('transactions-container');
             const offlineElements = container ? container.querySelectorAll('[data-offline="true"]') : [];
-            console.log('- Offline elements in DOM:', offlineElements.length);
+        // console.log('- Offline elements in DOM:', offlineElements.length);
         }
     };
     
     window.reIntegrateOfflineData = function() {
-        console.log('🔄 Manual re-integration triggered');
+        // console.log('🔄 Manual re-integration triggered');
         integrateOfflineData();
     };
     

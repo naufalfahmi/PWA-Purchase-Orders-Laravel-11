@@ -10,7 +10,7 @@ class SmartCacheManager {
     }
 
     async init() {
-        console.log('🚀 Smart Cache Manager initialized');
+        // Smart Cache Manager initialized
         
         // Check on page load
         await this.checkAndUpdate();
@@ -35,10 +35,10 @@ class SmartCacheManager {
             const needsUpdate = await this.checkIfUpdateNeeded();
             
             if (needsUpdate) {
-                console.log('🔄 Update needed, starting smart cache...');
+                // Update needed, starting smart cache
                 await this.smartUpdate();
             } else {
-                console.log('✅ Cache is up to date');
+        // console.log('✅ Cache is up to date');
             }
             
             // Update last check time
@@ -54,7 +54,7 @@ class SmartCacheManager {
         try {
             // Check if Cache API is available
             if (!('caches' in window)) {
-                console.log('⚠️ Cache API not available, skipping cache check');
+        // console.log('⚠️ Cache API not available, skipping cache check');
                 return false;
             }
             
@@ -69,7 +69,7 @@ class SmartCacheManager {
                 try {
                     const response = await fetch(asset, { method: 'HEAD' });
                     if (!response.ok) {
-                        console.log(`❌ Asset not found: ${asset}`);
+        // console.log(`❌ Asset not found: ${asset}`);
                         return true;
                     }
                 } catch (error) {
@@ -84,7 +84,7 @@ class SmartCacheManager {
             
             // If cache is empty, need update
             if (keys.length < 5) {
-                console.log('📦 Cache is empty, need update');
+        // console.log('📦 Cache is empty, need update');
                 return true;
             }
             
@@ -95,14 +95,14 @@ class SmartCacheManager {
             );
             
             if (!hasLatestAssets) {
-                console.log('🔄 Cache missing latest assets, need update');
+        // console.log('🔄 Cache missing latest assets, need update');
                 return true;
             }
             
             // Check if cache is too old (older than 1 hour)
             const cacheAge = Date.now() - this.lastCheck;
             if (cacheAge > 60 * 60 * 1000) {
-                console.log('⏰ Cache is old, need update');
+        // console.log('⏰ Cache is old, need update');
                 return true;
             }
             
@@ -118,7 +118,7 @@ class SmartCacheManager {
         this.isRunning = true;
         
         try {
-            console.log('🔄 Starting smart update...');
+        // console.log('🔄 Starting smart update...');
             
             // Show subtle notification
             this.showUpdateNotification();
@@ -132,7 +132,7 @@ class SmartCacheManager {
             // Update Service Worker
             await this.updateServiceWorker();
             
-            console.log('✅ Smart update completed');
+        // console.log('✅ Smart update completed');
             
         } catch (error) {
             console.error('❌ Smart update failed:', error);
@@ -144,7 +144,7 @@ class SmartCacheManager {
     async clearOldCaches() {
         try {
             if (!('caches' in window)) {
-                console.log('⚠️ Cache API not available, skipping cache clear');
+        // console.log('⚠️ Cache API not available, skipping cache clear');
                 return;
             }
             
@@ -154,7 +154,7 @@ class SmartCacheManager {
             );
             
             await Promise.all(oldCaches.map(name => {
-                console.log(`   Deleting old cache: ${name}`);
+        // console.log(`   Deleting old cache: ${name}`);
                 return caches.delete(name);
             }));
             
@@ -166,7 +166,7 @@ class SmartCacheManager {
     async cacheNewAssets() {
         try {
             if (!('caches' in window)) {
-                console.log('⚠️ Cache API not available, skipping asset caching');
+        // console.log('⚠️ Cache API not available, skipping asset caching');
                 return;
             }
             
@@ -197,14 +197,14 @@ class SmartCacheManager {
                     if (response.ok) {
                         await cache.put(asset, response);
                         cached++;
-                        console.log(`✅ Cached: ${asset}`);
+        // console.log(`✅ Cached: ${asset}`);
                     }
                 } catch (error) {
                     console.log(`❌ Failed: ${asset}`);
                 }
             }
             
-            console.log(`🎉 Cached ${cached}/${assetsToCache.length} assets`);
+        // console.log(`🎉 Cached ${cached}/${assetsToCache.length} assets`);
             
         } catch (error) {
             console.error('❌ Error caching assets:', error);
@@ -218,7 +218,7 @@ class SmartCacheManager {
                 
                 if (registration) {
                     if (registration.waiting) {
-                        console.log('✅ New Service Worker waiting, activating...');
+        // console.log('✅ New Service Worker waiting, activating...');
                         registration.waiting.postMessage({ action: 'skipWaiting' });
                         
                         // Wait for activation
@@ -231,7 +231,7 @@ class SmartCacheManager {
                             });
                         });
                         
-                        console.log('✅ Service Worker updated');
+        // console.log('✅ Service Worker updated');
                     }
                 }
             }

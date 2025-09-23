@@ -63,7 +63,7 @@
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('/sw-simple.js')
                     .then(registration => {
-                        console.log('SW registered:', registration.scope);
+        // console.log('SW registered:', registration.scope);
                     })
                     .catch(error => {
                         console.log('SW failed, using fallback mode:', error);

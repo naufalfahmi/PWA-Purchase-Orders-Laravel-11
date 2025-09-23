@@ -466,7 +466,7 @@
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('/sw-simple.js')
                     .then(registration => {
-                        console.log('✅ ServiceWorker registered: ', registration.scope);
+        // console.log('✅ ServiceWorker registered: ', registration.scope);
 
                         // Optional: auto detect update
                         registration.onupdatefound = () => {
@@ -474,9 +474,9 @@
                             installingWorker.onstatechange = () => {
                                 if (installingWorker.state === 'installed') {
                                     if (navigator.serviceWorker.controller) {
-                                        console.log('♻️ New ServiceWorker available, refresh to update.');
+        // console.log('♻️ New ServiceWorker available, refresh to update.');
                                     } else {
-                                        console.log('🎉 ServiceWorker ready for offline use.');
+        // console.log('🎉 ServiceWorker ready for offline use.');
                                     }
                                 }
                             };
@@ -524,7 +524,7 @@
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('/sw-simple.js')
                     .then(registration => {
-                        console.log('SW registered:', registration.scope);
+        // console.log('SW registered:', registration.scope);
                     })
                     .catch(error => {
                         console.log('SW failed, using fallback mode:', error);

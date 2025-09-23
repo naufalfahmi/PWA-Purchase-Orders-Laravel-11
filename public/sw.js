@@ -104,7 +104,7 @@ self.addEventListener('fetch', event => {
             try {
               const cache = await caches.open(CACHE_NAME);
               await cache.put(event.request, responseToCache);
-              console.log(`Cached new resource: ${url}`);
+        // console.log(`Cached new resource: ${url}`);
             } catch (cacheError) {
               console.log(`Failed to cache ${url}:`, cacheError);
               // Continue even if caching fails

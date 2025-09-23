@@ -4,7 +4,7 @@ if ('serviceWorker' in navigator) {
         const swVersion = 'v3';
         navigator.serviceWorker.register(`/sw-simple.js?v=${swVersion}`)
             .then(registration => {
-                console.log('SW registered: ', registration);
+        // console.log('SW registered: ', registration);
             })
             .catch(registrationError => {
                 console.log('SW registration failed: ', registrationError);
@@ -57,7 +57,7 @@ function showInstallBanner() {
                 deferredPrompt.prompt();
                 deferredPrompt.userChoice.then((choiceResult) => {
                     if (choiceResult.outcome === 'accepted') {
-                        console.log('User accepted the install prompt');
+        // console.log('User accepted the install prompt');
                     }
                     deferredPrompt = null;
                     banner.remove();
@@ -81,7 +81,7 @@ function showInstallBanner() {
 
 // Handle app installed
 window.addEventListener('appinstalled', (evt) => {
-    console.log('App was installed');
+        // console.log('App was installed');
     const banner = document.getElementById('install-banner');
     if (banner) {
         banner.remove();

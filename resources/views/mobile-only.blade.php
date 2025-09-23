@@ -93,7 +93,7 @@
             window.addEventListener('load', function() {
                 navigator.serviceWorker.register('/sw-simple.js')
                     .then(function(registration) {
-                        console.log('ServiceWorker registration successful');
+        // console.log('ServiceWorker registration successful');
                         // Force update cache
                         registration.update();
                     })

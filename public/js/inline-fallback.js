@@ -164,7 +164,7 @@ class InlineFallbackManager {
                     }
                 }
             } catch (e) {
-                console.log('Could not fetch manifest, using fallback assets');
+        // console.log('Could not fetch manifest, using fallback assets');
             }
             
             // Add static fallbacks
