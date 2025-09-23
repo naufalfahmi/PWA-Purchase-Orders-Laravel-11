@@ -1,4 +1,5 @@
 {
+  "id": "munah-purchase-orders",
   "name": "Munah - Purchase Orders",
   "short_name": "Munah PO",
   "description": "Aplikasi Munah untuk manajemen purchase order",
@@ -9,6 +10,7 @@
   "orientation": "portrait",
   "scope": "/",
   "lang": "id",
+  "version": "1.0.0",
   "permissions": [
     "downloads"
   ],

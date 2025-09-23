@@ -11,10 +11,13 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="Munah - Purchase Orders">
+    <meta name="application-name" content="Munah - Purchase Orders">
+    <meta name="msapplication-TileTitle" content="Munah - Purchase Orders">
+    <meta name="msapplication-tooltip" content="Munah - Purchase Orders">
     
     <!-- PWA Icons -->
     <link rel="apple-touch-icon" href="{{ asset('icons/icon-192x192.png') }}">
-    <link rel="manifest" href="{{ asset('manifest.json') }}">
+    <link rel="manifest" href="{{ asset('manifest.json') }}?v={{ time() }}">
     
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     
