@@ -360,7 +360,9 @@ class POReportExport implements FromCollection, WithHeadings, WithMapping, WithS
                 $sheet->setCellValue('A' . ($summaryRow + 1), 'Dicetak pada: ' . now()->format('d F Y H:i:s'));
                 $summaryRow += 2;
 
-                // Merge grouped columns per PO: A (No), B (Tanggal), C (PO), D (Supplier), Q (Pengiriman)
+                // Merge grouped columns per PO: A (No), B (Tanggal), C (PO), D (Supplier),
+                // K (Status), L (Diapprove Oleh), M (Tanggal Approval), N (Catatan Approval),
+                // O (Sales), P (Catatan Umum), Q (Pengiriman)
                 $currentPo = null;
                 $groupStart = $dataStartRow;
                 for ($r = $dataStartRow; $r <= $lastRow; $r++) {
@@ -377,7 +379,7 @@ class POReportExport implements FromCollection, WithHeadings, WithMapping, WithS
                     if ($isBoundary) {
                         $groupEnd = ($poValue !== $currentPo) ? ($r - 1) : $r;
                         if ($groupEnd >= $groupStart) {
-                            foreach (['A','B','C','D','Q'] as $col) {
+                            foreach (['A','B','C','D','K','L','M','N','O','P','Q'] as $col) {
                                 $sheet->mergeCells($col . $groupStart . ':' . $col . $groupEnd);
                                 $sheet->getStyle($col . $groupStart . ':' . $col . $groupEnd)->getAlignment()
                                     ->setHorizontal(Alignment::HORIZONTAL_CENTER)
