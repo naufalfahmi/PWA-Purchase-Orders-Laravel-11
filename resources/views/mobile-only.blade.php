@@ -91,7 +91,7 @@
         // Register service worker untuk PWA
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', function() {
-                navigator.serviceWorker.register('/sw.js')
+                navigator.serviceWorker.register('/sw-simple.js')
                     .then(function(registration) {
                         console.log('ServiceWorker registration successful');
                         // Force update cache
