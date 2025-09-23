@@ -21,7 +21,7 @@ class OfflineStorageManager {
             }
         }, 30000); // Every 30 seconds
         
-        console.log('Offline Storage Manager initialized');
+        // console.log('Offline Storage Manager initialized');
     }
 
     // Save data offline
@@ -46,8 +46,8 @@ class OfflineStorageManager {
         // Add to sync queue
         this.addToSyncQueue(offlineItem);
         
-        console.log(`Data saved offline: ${type} - ${id}`);
-        console.log('Offline data count:', offlineData.length);
+        // console.log(`Data saved offline: ${type} - ${id}`);
+        // console.log('Offline data count:', offlineData.length);
         
         // Trigger list update immediately and after delay
         if (window.offlineListManager) {
@@ -140,7 +140,7 @@ class OfflineStorageManager {
             }));
         } catch (e) {}
 
-        console.log(`Syncing ${unsyncedItems.length} items...`);
+        // console.log(`Syncing ${unsyncedItems.length} items...`);
         
         const syncedItems = [];
         const initialPendingCount = unsyncedItems.length;
@@ -151,7 +151,7 @@ class OfflineStorageManager {
                 item.synced = true;
                 item.syncedAt = new Date().toISOString();
                 syncedItems.push(item.id);
-                console.log(`Synced: ${item.type} - ${item.id}`);
+                // console.log(`Synced: ${item.type} - ${item.id}`);
             } catch (error) {
                 console.error(`Failed to sync ${item.type} - ${item.id}:`, error);
                 item.syncError = error.message;
@@ -368,7 +368,7 @@ class OfflineStorageManager {
             const offlineData = this.getOfflineData();
             const filteredData = offlineData.filter(item => !syncedItemIds.includes(item.id));
             this.setOfflineData(filteredData);
-            console.log(`Removed ${syncedItemIds.length} synced items from offline storage`);
+            // console.log(`Removed ${syncedItemIds.length} synced items from offline storage`);
         } catch (error) {
             console.error('Failed to remove synced items:', error);
         }
@@ -390,7 +390,7 @@ class OfflineStorageManager {
         const unsyncedQueue = queue.filter(item => !item.synced);
         this.updateSyncQueue(unsyncedQueue);
         
-        console.log('Sync total reset - cleared all synced data');
+        // console.log('Sync total reset - cleared all synced data');
     }
 }
 
@@ -398,16 +398,16 @@ class OfflineStorageManager {
 document.addEventListener('DOMContentLoaded', () => {
     try {
         window.offlineStorage = new OfflineStorageManager();
-        console.log('Offline Storage Manager created successfully');
+        // console.log('Offline Storage Manager created successfully');
     } catch (error) {
         console.error('Failed to initialize Offline Storage Manager:', error);
         // Create a fallback object
         window.offlineStorage = {
-            saveOfflineData: () => console.log('Offline storage not available'),
+            saveOfflineData: () => {/* console.log('Offline storage not available') */},
             getSyncStatus: () => ({ total: 0, unsynced: 0, synced: 0, failed: 0 }),
             syncAllData: () => Promise.resolve(),
-            clearSyncedData: () => console.log('Offline storage not available'),
-            clearAllData: () => console.log('Offline storage not available')
+            clearSyncedData: () => {/* console.log('Offline storage not available') */},
+            clearAllData: () => {/* console.log('Offline storage not available') */}
         };
     }
 });

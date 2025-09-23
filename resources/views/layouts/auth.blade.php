@@ -66,7 +66,7 @@
         // console.log('SW registered:', registration.scope);
                     })
                     .catch(error => {
-                        console.log('SW failed, using fallback mode:', error);
+                        // console.log('SW failed, using fallback mode:', error);
                     });
             });
         }

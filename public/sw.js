@@ -2,7 +2,7 @@ const CACHE_NAME = 'munah-pwa-v10';
 const urlsToCache = [
   // Static assets only - no pages that require auth
   '/build/assets/app-CP0OoLXE.css',
-  '/build/assets/app-C_n7XUIL.js',
+  '/build/assets/app-CeXcbV7U.js',
   '/css/mobile-fallback.css',
   '/css/inter-fonts.css',
   '/js/inline-fallback.js',
@@ -32,7 +32,7 @@ self.addEventListener('install', event => {
         // Cache resources one by one to handle individual failures
         const cachePromises = urlsToCache.map(url => {
           return cache.add(url).catch(error => {
-            console.log(`Failed to cache ${url}:`, error);
+            // console.log(`Failed to cache ${url}:`, error);
             // Continue with other resources even if one fails
             return null;
           });
@@ -41,14 +41,14 @@ self.addEventListener('install', event => {
         return Promise.allSettled(cachePromises).then(results => {
           const successful = results.filter(result => result.status === 'fulfilled').length;
           const failed = results.filter(result => result.status === 'rejected').length;
-          console.log(`Cached ${successful} resources, ${failed} failed`);
+          // console.log(`Cached ${successful} resources, ${failed} failed`);
         });
       })
       .then(() => {
         return self.skipWaiting();
       })
       .catch(error => {
-        console.log('Cache installation failed:', error);
+        // console.log('Cache installation failed:', error);
         // Still skip waiting even if caching failed
         return self.skipWaiting();
       })
@@ -106,7 +106,7 @@ self.addEventListener('fetch', event => {
               await cache.put(event.request, responseToCache);
         // console.log(`Cached new resource: ${url}`);
             } catch (cacheError) {
-              console.log(`Failed to cache ${url}:`, cacheError);
+              // console.log(`Failed to cache ${url}:`, cacheError);
               // Continue even if caching fails
             }
           }

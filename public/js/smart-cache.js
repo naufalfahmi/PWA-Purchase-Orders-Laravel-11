@@ -61,7 +61,7 @@ class SmartCacheManager {
             // Check if we have the latest assets
             const latestAssets = [
                 '/build/assets/app-CP0OoLXE.css',
-                '/build/assets/app-C_n7XUIL.js'
+                '/build/assets/app-CeXcbV7U.js'
             ];
             
             // Check if assets exist
@@ -73,7 +73,7 @@ class SmartCacheManager {
                         return true;
                     }
                 } catch (error) {
-                    console.log(`❌ Error checking asset: ${asset}`);
+                    // console.log(`❌ Error checking asset: ${asset}`);
                     return true;
                 }
             }
@@ -187,7 +187,7 @@ class SmartCacheManager {
                 '/fonts/inter-600.woff2',
                 '/fonts/inter-700.woff2',
                 '/build/assets/app-CP0OoLXE.css',
-                '/build/assets/app-C_n7XUIL.js'
+                '/build/assets/app-CeXcbV7U.js'
             ];
             
             let cached = 0;
@@ -200,7 +200,7 @@ class SmartCacheManager {
         // console.log(`✅ Cached: ${asset}`);
                     }
                 } catch (error) {
-                    console.log(`❌ Failed: ${asset}`);
+                    // console.log(`❌ Failed: ${asset}`);
                 }
             }
             

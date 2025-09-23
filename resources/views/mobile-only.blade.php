@@ -98,7 +98,7 @@
                         registration.update();
                     })
                     .catch(function(err) {
-                        console.log('ServiceWorker registration failed: ', err);
+                        // console.log('ServiceWorker registration failed: ', err);
                     });
             });
         }
@@ -113,7 +113,7 @@
                     width: 128,
                     height: 128
                 }).catch(function(error) {
-                    console.log('Local QR generator failed, trying fallback');
+                    // console.log('Local QR generator failed, trying fallback');
                     generateQRFallback(loginUrl);
                 });
             } else {

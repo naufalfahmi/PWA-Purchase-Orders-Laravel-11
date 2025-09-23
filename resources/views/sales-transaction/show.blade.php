@@ -418,7 +418,7 @@
             }, 3000);
             
         } catch (e) {
-            console.log('WhatsApp mobile app failed:', e);
+            // console.log('WhatsApp mobile app failed:', e);
             tryOpenWhatsAppWeb(message, cleanPhone);
         }
     }
@@ -469,7 +469,7 @@
             }, 100);
             
         } catch (e) {
-            console.log('wa.me failed:', e);
+            // console.log('wa.me failed:', e);
             tryFallbackMethods(message, cleanPhone);
         }
     }
@@ -486,7 +486,7 @@
                 return true;
             }
         } catch (e) {
-            console.log('web.whatsapp.com failed:', e);
+            // console.log('web.whatsapp.com failed:', e);
         }
         
         // Method 3: Try WhatsApp protocol
@@ -501,7 +501,7 @@
             return true;
             
         } catch (e) {
-            console.log('WhatsApp protocol failed:', e);
+            // console.log('WhatsApp protocol failed:', e);
         }
         
         // Method 4: Show copy dialog as final fallback

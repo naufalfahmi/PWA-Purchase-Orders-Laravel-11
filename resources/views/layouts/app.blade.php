@@ -527,7 +527,7 @@
         // console.log('SW registered:', registration.scope);
                     })
                     .catch(error => {
-                        console.log('SW failed, using fallback mode:', error);
+                        // console.log('SW failed, using fallback mode:', error);
                     });
             });
         }
@@ -656,7 +656,7 @@
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
                 }
             }).catch(error => {
-                console.log('Heartbeat failed:', error);
+                // console.log('Heartbeat failed:', error);
             });
         }
 

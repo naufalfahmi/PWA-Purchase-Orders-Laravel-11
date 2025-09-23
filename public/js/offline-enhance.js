@@ -102,7 +102,7 @@ class OfflineEnhancer {
             // Save to offline storage
             if (window.offlineStorage) {
                 const offlineId = window.offlineStorage.saveOfflineData(formType, data, 'create');
-                console.log('Form submitted offline:', offlineId);
+                // console.log('Form submitted offline:', offlineId);
                 
                 // Show success message
                 this.showOfflineMessage('✅ Data berhasil disimpan offline! Akan di-sync otomatis saat online.');
@@ -189,7 +189,7 @@ class OfflineEnhancer {
                     timestamp: new Date().toISOString()
                 }, 'create');
                 
-                console.log('Button action saved offline:', offlineId);
+                // console.log('Button action saved offline:', offlineId);
                 
                 // Show success message
                 this.showOfflineMessage('Action berhasil disimpan offline! Akan di-sync otomatis saat online.');
@@ -235,7 +235,7 @@ class OfflineEnhancer {
                 redirectUrl = '/dashboard';
         }
         
-        console.log(`Redirecting to: ${redirectUrl}`);
+        // console.log(`Redirecting to: ${redirectUrl}`);
         window.location.href = redirectUrl;
     }
 
@@ -343,16 +343,16 @@ class OfflineEnhancer {
     updateOfflineList(formType) {
         // Check if we're on a page that has offline list functionality
         if (typeof updatePOList === 'function') {
-            console.log('Updating PO list after offline insert');
+            // console.log('Updating PO list after offline insert');
             updatePOList();
         } else if (typeof updateOfflineList === 'function') {
-            console.log('Updating offline list after offline insert');
+            // console.log('Updating offline list after offline insert');
             updateOfflineList();
         } else if (typeof refreshData === 'function') {
-            console.log('Refreshing data after offline insert');
+            // console.log('Refreshing data after offline insert');
             refreshData();
         } else {
-            console.log('No offline list update function found');
+            // console.log('No offline list update function found');
         }
         
         // Trigger custom event for other components to listen
