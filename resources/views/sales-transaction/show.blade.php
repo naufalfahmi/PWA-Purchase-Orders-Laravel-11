@@ -294,19 +294,38 @@
         const poNumber = '{{ $transactions->first()->po_number ?? "" }}';
         const amount = '{{ number_format($totalAmount, 0, ",", ".") }}';
         const salesName = '{{ $transactions->first()->sales->name ?? "Sales" }}';
+        const approverName = '{{ auth()->user()->name ?? "Owner" }}';
+        const supplierName = '{{ $transactions->first()->product->supplier->nama_supplier ?? "N/A" }}';
+        const transactionDate = '{{ $transactions->first()->transaction_date->format("d/m/Y") }}';
+        const deliveryDate = '{{ $transactions->first()->delivery_date ? $transactions->first()->delivery_date->format("d/m/Y") : "TBD" }}';
         
         const statusText = status === 'approve' ? 'DISETUJUI' : 'DITOLAK';
-        
-        // Create simple text message without emojis to avoid encoding issues
-        let message = '';
-        
         const statusSymbol = status === 'approve' ? '[✓]' : '[✗]';
         
-        message = '*NOTIFIKASI PERSETUJUAN PO*\n\n';
+        // Use the same template as resendWhatsAppNotification
+        let message = '*NOTIFIKASI PERSETUJUAN PO*\n\n';
         message += statusSymbol + ' Status: *' + statusText + '*\n';
         message += 'PO Number: *' + poNumber + '*\n';
-        message += 'Total: Rp ' + amount + '\n';
+        message += 'Tanggal: ' + transactionDate + '\n';
+        message += 'Delivery: ' + deliveryDate + '\n';
+        message += 'Supplier: *' + supplierName + '*\n';
         message += 'Sales: ' + salesName + '\n';
+        message += 'Disetujui oleh: *' + approverName + '*\n\n';
+        
+        message += '*DETAIL PRODUK:*\n';
+        @foreach($transactions as $transaction)
+            @php
+                $rawQty = ($transaction->quantity_carton ?? 0) > 0 ? (int)$transaction->quantity_carton : (int)$transaction->quantity_piece;
+                $qtyType = ($transaction->quantity_carton ?? 0) > 0 ? 'CTN' : 'PCS';
+                $rawSubtotal = $rawQty * (float)$transaction->unit_price;
+            @endphp
+            message += '• {{ $transaction->product->name ?? "N/A" }}\n';
+            message += '  Qty: {{ $rawQty }} {{ $qtyType }}\n';
+            message += '  Harga: Rp {{ number_format($transaction->unit_price, 0, ",", ".") }}\n';
+            message += '  Subtotal: Rp {{ number_format($rawSubtotal, 0, ",", ".") }}\n\n';
+        @endforeach
+        
+        message += 'TOTAL: *Rp ' + amount + '*\n';
         
         if (notes) {
             message += '\nCatatan: ' + notes + '\n';
@@ -333,10 +352,6 @@
             cleanPhone = '62' + cleanPhone;
         }
         
-        // console.log('Attempting to open WhatsApp for:', cleanPhone);
-        // console.log('Message:', message);
-        
-        // Try multiple methods to open WhatsApp
         return tryOpenWhatsApp(message, cleanPhone);
     }
     
