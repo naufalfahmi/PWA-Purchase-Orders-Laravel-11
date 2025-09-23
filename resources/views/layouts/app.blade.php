@@ -23,8 +23,13 @@
     
     <!-- Fallback CSS untuk production jika Vite tidak tersedia -->
     @if(app()->environment('production'))
-        <link rel="stylesheet" href="{{ asset('build/assets/app-CP0OoLXE.css') }}">
-        <script src="{{ asset('build/assets/app-DTZ9Twbo.js') }}" defer></script>
+        @php
+            $manifest = json_decode(file_get_contents(public_path('build/manifest.json')), true);
+            $cssFile = $manifest['resources/css/app.css']['file'] ?? 'app.css';
+            $jsFile = $manifest['resources/js/app.js']['file'] ?? 'app.js';
+        @endphp
+        <link rel="stylesheet" href="{{ asset('build/assets/' . $cssFile) }}">
+        <script src="{{ asset('build/assets/' . $jsFile) }}" defer></script>
     @endif
     
     <!-- Production Fallback CSS - Comprehensive styling -->

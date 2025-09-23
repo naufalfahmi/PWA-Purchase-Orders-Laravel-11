@@ -151,11 +151,27 @@ class InlineFallbackManager {
         
         // Fallback to known assets if none found
         if (criticalAssets.length === 0) {
+            // Try to fetch manifest to get current assets
+            try {
+                const manifestResponse = await fetch('/build/manifest.json');
+                if (manifestResponse.ok) {
+                    const manifest = await manifestResponse.json();
+                    if (manifest['resources/css/app.css']?.file) {
+                        criticalAssets.push('/build/assets/' + manifest['resources/css/app.css'].file);
+                    }
+                    if (manifest['resources/js/app.js']?.file) {
+                        criticalAssets.push('/build/assets/' + manifest['resources/js/app.js'].file);
+                    }
+                }
+            } catch (e) {
+                console.log('Could not fetch manifest, using fallback assets');
+            }
+            
+            // Add static fallbacks
             criticalAssets.push(
-                '/build/assets/app-CP0OoLXE.css',
-                '/build/assets/app-Dd4mxizw.js',
                 '/css/inter-fonts.css',
-                '/css/mobile-fallback.css'
+                '/css/mobile-fallback.css',
+                '/css/production-fallback.css'
             );
         }
 
