@@ -28,8 +28,8 @@
             $cssFile = $manifest['resources/css/app.css']['file'] ?? 'app.css';
             $jsFile = $manifest['resources/js/app.js']['file'] ?? 'app.js';
         @endphp
-        <link rel="stylesheet" href="{{ asset('build/assets/' . $cssFile) }}">
-        <script src="{{ asset('build/assets/' . $jsFile) }}" defer></script>
+        <link rel="stylesheet" href="{{ asset('build/' . $cssFile) }}">
+        <script src="{{ asset('build/' . $jsFile) }}" defer></script>
     @endif
     
     <!-- Production Fallback CSS - Comprehensive styling -->
