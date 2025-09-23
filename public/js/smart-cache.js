@@ -61,7 +61,7 @@ class SmartCacheManager {
             // Check if we have the latest assets
             const latestAssets = [
                 '/build/assets/app-CP0OoLXE.css',
-                '/build/assets/app-Dd4mxizw.js'
+                '/build/assets/app-C_n7XUIL.js'
             ];
             
             // Check if assets exist
@@ -187,7 +187,7 @@ class SmartCacheManager {
                 '/fonts/inter-600.woff2',
                 '/fonts/inter-700.woff2',
                 '/build/assets/app-CP0OoLXE.css',
-                '/build/assets/app-Dd4mxizw.js'
+                '/build/assets/app-C_n7XUIL.js'
             ];
             
             let cached = 0;
