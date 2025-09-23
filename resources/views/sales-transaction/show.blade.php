@@ -241,7 +241,16 @@
             @php($poNumber = $transactions->first()->po_number ?? null)
             @if($poNumber)
                 <a href="{{ route('sales-transaction.edit-po', $poNumber) }}" class="btn-primary">Edit PO</a>
-                @if(Auth::user()->isOwner())
+                @php
+                    $canDelete = false;
+                    if (Auth::user()->isOwner()) {
+                        $canDelete = true;
+                    } elseif (Auth::user()->isSales()) {
+                        $currentSales = \App\Models\Sales::where('name', Auth::user()->name)->first();
+                        $canDelete = $currentSales && ($transactions->first()->sales_id === $currentSales->id) && $transactions->first()->isPending();
+                    }
+                @endphp
+                @if($canDelete)
                 <form action="{{ route('sales-transaction.delete-po', $poNumber) }}" method="POST" onsubmit="return confirmDeletePO(event)" style="display:inline-block;">
                     @csrf
                     @method('DELETE')

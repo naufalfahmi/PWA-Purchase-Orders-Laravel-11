@@ -402,18 +402,37 @@ class SalesTransactionController extends Controller
      */
     public function deletePO(Request $request, $poNumber)
     {
-        // Only Owner can delete
-        if (!auth()->user() || !auth()->user()->isOwner()) {
+        $user = auth()->user();
+        if (!$user) {
             abort(403, 'Unauthorized');
         }
 
-        // Optional: prevent deleting approved POs unless forced
+        // Prevent deleting approved POs
         $hasApproved = SalesTransaction::where('po_number', $poNumber)
             ->where('approval_status', 'approved')
             ->exists();
 
         if ($hasApproved) {
             return back()->with('error', 'Tidak dapat menghapus PO yang sudah disetujui.');
+        }
+
+        // Authorization: Owner can delete any pending PO; Sales can delete their own pending PO
+        $canDelete = false;
+        if ($user->isOwner()) {
+            $canDelete = true;
+        } elseif ($user->isSales()) {
+            // Determine current sales record
+            $currentSales = \App\Models\Sales::where('name', $user->name)->first();
+            if ($currentSales) {
+                $ownedBySales = SalesTransaction::where('po_number', $poNumber)
+                    ->where('sales_id', $currentSales->id)
+                    ->exists();
+                $canDelete = $ownedBySales;
+            }
+        }
+
+        if (!$canDelete) {
+            abort(403, 'Anda tidak memiliki izin untuk menghapus PO ini.');
         }
 
         $deleted = SalesTransaction::where('po_number', $poNumber)->delete();
