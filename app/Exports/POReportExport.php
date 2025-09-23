@@ -62,7 +62,6 @@ class POReportExport implements FromCollection, WithHeadings, WithMapping, WithS
             'Kategori',
             'Jumlah Karton',
             'Jumlah Piece',
-            'Total Piece',
             'Harga Satuan',
             'Total Harga',
             'Status Approval',
@@ -77,12 +76,18 @@ class POReportExport implements FromCollection, WithHeadings, WithMapping, WithS
 
     public function map($transaction): array
     {
-        static $counter = 0;
-        $counter++;
+        // Numbering once per PO (merged rows in sheet)
+        static $poCounter = 0;
+        static $lastPo = null;
+        $isNewPo = $lastPo !== $transaction->po_number;
+        if ($isNewPo) {
+            $poCounter++;
+            $lastPo = $transaction->po_number;
+        }
 
         if ($this->groupedByPO) {
             return [
-                $counter,
+                $poCounter,
                 $transaction->transaction_date ? $transaction->transaction_date->format('d/m/Y') : '-',
                 $transaction->po_number ?? '-',
                 optional($transaction->supplier)->nama_supplier ?? '-',
@@ -100,15 +105,14 @@ class POReportExport implements FromCollection, WithHeadings, WithMapping, WithS
         }
 
         return [
-            $counter,
-            $transaction->transaction_date ? $transaction->transaction_date->format('d/m/Y') : '-',
-            $transaction->po_number ?? '-',
-            $transaction->supplier->nama_supplier ?? '-',
+            $isNewPo ? $poCounter : '',
+            $isNewPo ? ($transaction->transaction_date ? $transaction->transaction_date->format('d/m/Y') : '-') : '',
+            $isNewPo ? ($transaction->po_number ?? '-') : '',
+            $isNewPo ? ($transaction->supplier->nama_supplier ?? '-') : '',
             $transaction->product->name ?? '-',
             $transaction->product->category ?? '-',
             $transaction->quantity_carton ?? 0,
             $transaction->quantity_piece ?? 0,
-            $transaction->total_quantity_piece ?? 0,
             (float) ($transaction->unit_price ?? 0),
             (float) ($transaction->total_amount ?? 0),
             $this->getStatusLabel($transaction->approval_status),
@@ -117,14 +121,14 @@ class POReportExport implements FromCollection, WithHeadings, WithMapping, WithS
             $transaction->approval_notes ?? '-',
             $transaction->sales->name ?? '-',
             $transaction->general_notes ?? '-',
-            $transaction->delivery_date ? $transaction->delivery_date->format('d/m/Y') : '-',
+            $isNewPo ? ($transaction->delivery_date ? $transaction->delivery_date->format('d/m/Y') : '-') : '',
         ];
     }
 
     public function styles(Worksheet $sheet)
     {
         // Header styles
-        $lastHeaderColumn = $this->groupedByPO ? 'N' : 'R';
+        $lastHeaderColumn = $this->groupedByPO ? 'N' : 'Q';
         $sheet->getStyle('A1:' . $lastHeaderColumn . '1')->applyFromArray([
             'font' => [
                 'bold' => true,
@@ -177,8 +181,8 @@ class POReportExport implements FromCollection, WithHeadings, WithMapping, WithS
             // Total Amount at column H
             $sheet->getStyle('H2:H' . $lastRow)->getNumberFormat()->setFormatCode('#,##0');
         } else {
-            // Unit Price and Total Harga
-            $sheet->getStyle('K2:L' . $lastRow)->getNumberFormat()->setFormatCode('#,##0');
+            // Unit Price (I) and Total Harga (J)
+            $sheet->getStyle('I2:J' . $lastRow)->getNumberFormat()->setFormatCode('#,##0');
         }
     }
 
@@ -211,16 +215,15 @@ class POReportExport implements FromCollection, WithHeadings, WithMapping, WithS
             'F' => 15,  // Kategori
             'G' => 12,  // Jumlah Karton
             'H' => 12,  // Jumlah Piece
-            'I' => 12,  // Total Piece
-            'J' => 15,  // Harga Satuan
-            'K' => 15,  // Total Harga
-            'L' => 15,  // Status Approval
-            'M' => 20,  // Diapprove Oleh
-            'N' => 18,  // Tanggal Approval
-            'O' => 25,  // Catatan Approval
-            'P' => 20,  // Sales
-            'Q' => 30,  // Catatan Umum
-            'R' => 18,  // Tanggal Pengiriman
+            'I' => 15,  // Harga Satuan
+            'J' => 15,  // Total Harga
+            'K' => 15,  // Status Approval
+            'L' => 20,  // Diapprove Oleh
+            'M' => 18,  // Tanggal Approval
+            'N' => 25,  // Catatan Approval
+            'O' => 20,  // Sales
+            'P' => 30,  // Catatan Umum
+            'Q' => 18,  // Tanggal Pengiriman
         ];
     }
 
@@ -234,7 +237,7 @@ class POReportExport implements FromCollection, WithHeadings, WithMapping, WithS
         return [
             AfterSheet::class => function(AfterSheet $event) {
                 $sheet = $event->sheet->getDelegate();
-                $lastDataColumn = $this->groupedByPO ? 'M' : 'R';
+                $lastDataColumn = $this->groupedByPO ? 'M' : 'Q';
 
                 // Insert header template at the top (4-5 rows depending on delivery date)
                 $headerRows = 4;
@@ -323,7 +326,7 @@ class POReportExport implements FromCollection, WithHeadings, WithMapping, WithS
                 if ($this->groupedByPO) {
                     $sheet->setCellValue('H' . $totalRow, $this->transactions->sum('total_amount'));
                 } else {
-                    $sheet->setCellValue('L' . $totalRow, $this->transactions->sum('total_amount'));
+                    $sheet->setCellValue('J' . $totalRow, $this->transactions->sum('total_amount'));
                 }
                 
                 // Style the total row
@@ -347,9 +350,33 @@ class POReportExport implements FromCollection, WithHeadings, WithMapping, WithS
                 // Add summary info
                 $summaryRow = $totalRow + 2;
                 $totalTransactions = $this->groupedByPO ? $this->transactions->count() : $this->transactions->count();
-                $totalQuantity = $this->groupedByPO ? ($this->transactions->sum('total_quantity')) : ($this->transactions->sum('total_quantity_piece'));
                 $sheet->setCellValue('A' . $summaryRow, 'Total Transaksi (PO): ' . $totalTransactions);
-                $sheet->setCellValue('A' . ($summaryRow + 1), 'Total Quantity (PC): ' . number_format($totalQuantity, 0, ',', '.'));
+                $sheet->setCellValue('A' . ($summaryRow + 1), 'Dicetak pada: ' . now()->format('d F Y H:i:s'));
+                $summaryRow += 2;
+
+                // Merge grouped columns per PO: A (No), B (Tanggal), C (PO), D (Supplier), Q (Pengiriman)
+                $currentPo = null;
+                $groupStart = $dataStartRow;
+                for ($r = $dataStartRow; $r <= $lastRow; $r++) {
+                    $poValue = $sheet->getCell('C' . $r)->getValue();
+                    if ($currentPo === null) {
+                        $currentPo = $poValue;
+                        $groupStart = $r;
+                    }
+                    if ($poValue !== $currentPo || $r === $lastRow) {
+                        $groupEnd = ($poValue !== $currentPo) ? ($r - 1) : $r;
+                        if ($groupEnd > $groupStart) {
+                            foreach (['A','B','C','D','Q'] as $col) {
+                                $sheet->mergeCells($col . $groupStart . ':' . $col . $groupEnd);
+                                $sheet->getStyle($col . $groupStart . ':' . $col . $groupEnd)->getAlignment()
+                                    ->setHorizontal(Alignment::HORIZONTAL_CENTER)
+                                    ->setVertical(Alignment::VERTICAL_CENTER);
+                            }
+                        }
+                        $currentPo = $poValue;
+                        $groupStart = $r;
+                    }
+                }
                 $sheet->setCellValue('A' . ($summaryRow + 2), 'Dicetak pada: ' . now()->format('d F Y H:i:s'));
 
                 // Auto-fit columns

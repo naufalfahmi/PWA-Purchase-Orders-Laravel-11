@@ -241,7 +241,7 @@
                     <th style="width: 8%;">Kategori</th>
                     <th style="width: 6%;">Qty Karton</th>
                     <th style="width: 6%;">Qty Piece</th>
-                    <th style="width: 6%;">Total Piece</th>
+                    
                     <th style="width: 10%;">Harga Satuan</th>
                     <th style="width: 10%;">Total Harga</th>
                     <th style="width: 8%;">Status</th>
@@ -260,7 +260,7 @@
                         <td>{{ $transaction->product->category ?? '-' }}</td>
                         <td class="text-center">{{ $transaction->quantity_carton ?? 0 }}</td>
                         <td class="text-center">{{ $transaction->quantity_piece ?? 0 }}</td>
-                        <td class="text-center">{{ number_format($transaction->total_quantity_piece ?? 0) }}</td>
+                        
                         <td class="text-right">Rp {{ number_format($transaction->unit_price ?? 0, 0, ',', '.') }}</td>
                         <td class="text-right">Rp {{ number_format($transaction->total_amount ?? 0, 0, ',', '.') }}</td>
                         <td class="text-center">
