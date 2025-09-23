@@ -91,7 +91,7 @@ class OfflineListManager {
             tbody.insertBefore(row, tbody.firstChild);
         });
 
-        console.log(`Added ${unsyncedData.length} offline PO items to table`);
+        // console.log(`Added ${unsyncedData.length} offline PO items to table`);
     }
 
     // Add offline data to list

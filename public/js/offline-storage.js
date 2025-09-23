@@ -417,7 +417,7 @@ window.addEventListener('load', () => {
     if (!window.offlineStorage) {
         try {
             window.offlineStorage = new OfflineStorageManager();
-            console.log('Offline Storage Manager created on window load');
+            // console.log('Offline Storage Manager created on window load');
         } catch (error) {
             console.error('Failed to initialize Offline Storage Manager on window load:', error);
         }

@@ -174,7 +174,7 @@ class OfflineOverlayManager {
         this.saveSyncQueue();
         // this.updateIndicator();
         
-        console.log(`Added to sync queue: ${syncItem.id}`);
+        // console.log(`Added to sync queue: ${syncItem.id}`);
         return syncItem.id;
     }
 
@@ -184,7 +184,7 @@ class OfflineOverlayManager {
             return;
         }
         
-        console.log(`Syncing ${this.syncQueue.length} items...`);
+        // console.log(`Syncing ${this.syncQueue.length} items...`);
         
         const itemsToSync = this.syncQueue.filter(item => item.status === 'pending');
         
@@ -192,7 +192,7 @@ class OfflineOverlayManager {
             try {
                 await this.syncItem(item);
                 item.status = 'synced';
-                console.log(`Synced: ${item.id}`);
+                // console.log(`Synced: ${item.id}`);
             } catch (error) {
                 item.retryCount++;
                 if (item.retryCount >= 3) {
@@ -218,7 +218,7 @@ class OfflineOverlayManager {
         await new Promise(resolve => setTimeout(resolve, 1000));
         
         // In real implementation, make actual API calls
-        console.log(`Syncing ${type} ${action}:`, data);
+        // console.log(`Syncing ${type} ${action}:`, data);
     }
 
     // Load sync queue from localStorage

@@ -15,13 +15,13 @@ class OfflineRedirectManager {
 
         // Listen for offline event
         window.addEventListener('offline', () => {
-            console.log('Network offline detected');
+            // console.log('Network offline detected');
             this.redirectToOffline();
         });
 
         // Listen for online event
         window.addEventListener('online', () => {
-            console.log('Network online detected');
+            // console.log('Network online detected');
             this.redirectFromOffline();
         });
 

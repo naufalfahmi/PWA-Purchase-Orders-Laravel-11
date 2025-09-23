@@ -45,7 +45,7 @@ class OfflineSyncManager {
         this.syncQueue.push(syncItem);
         this.saveSyncQueue();
         
-        console.log(`Added to sync queue: ${syncItem.id}`);
+        // console.log(`Added to sync queue: ${syncItem.id}`);
         return syncItem.id;
     }
 
@@ -55,7 +55,7 @@ class OfflineSyncManager {
             return;
         }
         
-        console.log(`Syncing ${this.syncQueue.length} items...`);
+        // console.log(`Syncing ${this.syncQueue.length} items...`);
         
         const itemsToSync = this.syncQueue.filter(item => item.status === 'pending');
         
@@ -63,7 +63,7 @@ class OfflineSyncManager {
             try {
                 await this.syncItem(item);
                 item.status = 'synced';
-                console.log(`Synced: ${item.id}`);
+                // console.log(`Synced: ${item.id}`);
             } catch (error) {
                 item.retryCount++;
                 if (item.retryCount >= 3) {

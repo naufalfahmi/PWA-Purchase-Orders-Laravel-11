@@ -1239,10 +1239,10 @@ document.addEventListener('DOMContentLoaded', function() {
         // console.log('🔍 All offline data:', allOfflineData);
         // console.log('🔍 Purchase order data:', offlineData);
         // console.log('🔍 Debug offline data:', {
-            offlineData: offlineData,
-            length: offlineData.length,
-            container: container
-        });
+        //     offlineData: offlineData,
+        //     length: offlineData.length,
+        //     container: container
+        // });
         
         // Check if offline data already exists to prevent duplication
         const existingOfflineData = container.querySelectorAll('[data-offline="true"]');
