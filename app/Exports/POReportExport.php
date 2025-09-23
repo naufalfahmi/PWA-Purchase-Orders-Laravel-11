@@ -49,7 +49,8 @@ class POReportExport implements FromCollection, WithHeadings, WithMapping, WithS
                 'Diapprove Oleh',
                 'Tanggal Approval',
                 'Catatan Approval',
-                'Catatan Umum'
+                'Catatan Umum',
+                'Tanggal Pengiriman'
             ];
         }
         return [
@@ -70,7 +71,8 @@ class POReportExport implements FromCollection, WithHeadings, WithMapping, WithS
             'Tanggal Approval',
             'Catatan Approval',
             'Sales',
-            'Catatan Umum'
+            'Catatan Umum',
+            'Tanggal Pengiriman'
         ];
     }
 
@@ -94,6 +96,7 @@ class POReportExport implements FromCollection, WithHeadings, WithMapping, WithS
                 $transaction->approved_at ? \Carbon\Carbon::parse($transaction->approved_at)->format('d/m/Y H:i') : '-',
                 $transaction->approval_notes ?? '-',
                 $transaction->general_notes ?? '-',
+                $transaction->delivery_date ? \Carbon\Carbon::parse($transaction->delivery_date)->format('d/m/Y') : '-',
             ];
         }
 
@@ -115,14 +118,15 @@ class POReportExport implements FromCollection, WithHeadings, WithMapping, WithS
             $transaction->approved_at ? $transaction->approved_at->format('d/m/Y H:i') : '-',
             $transaction->approval_notes ?? '-',
             $transaction->sales->name ?? '-',
-            $transaction->general_notes ?? '-'
+            $transaction->general_notes ?? '-',
+            $transaction->delivery_date ? $transaction->delivery_date->format('d/m/Y') : '-',
         ];
     }
 
     public function styles(Worksheet $sheet)
     {
         // Header styles
-        $lastHeaderColumn = $this->groupedByPO ? 'M' : 'R';
+        $lastHeaderColumn = $this->groupedByPO ? 'N' : 'S';
         $sheet->getStyle('A1:' . $lastHeaderColumn . '1')->applyFromArray([
             'font' => [
                 'bold' => true,
@@ -197,6 +201,7 @@ class POReportExport implements FromCollection, WithHeadings, WithMapping, WithS
                 'K' => 18,  // Tanggal Approval
                 'L' => 25,  // Catatan Approval
                 'M' => 30,  // Catatan Umum
+                'N' => 18,  // Tanggal Pengiriman
             ];
         }
         return [
@@ -218,6 +223,7 @@ class POReportExport implements FromCollection, WithHeadings, WithMapping, WithS
             'P' => 25,  // Catatan Approval
             'Q' => 20,  // Sales
             'R' => 30,  // Catatan Umum
+            'S' => 18,  // Tanggal Pengiriman
         ];
     }
 

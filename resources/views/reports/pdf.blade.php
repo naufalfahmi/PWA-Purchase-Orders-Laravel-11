@@ -234,6 +234,7 @@
                 <tr>
                     <th style="width: 3%;">No</th>
                     <th style="width: 8%;">Tanggal</th>
+                    <th style="width: 8%;">Pengiriman</th>
                     <th style="width: 12%;">PO Number</th>
                     <th style="width: 15%;">Supplier</th>
                     <th style="width: 20%;">Produk</th>
@@ -252,6 +253,7 @@
                     <tr>
                         <td class="text-center">{{ $index + 1 }}</td>
                         <td>{{ $transaction->transaction_date ? $transaction->transaction_date->format('d/m/Y') : '-' }}</td>
+                        <td>{{ $transaction->delivery_date ? $transaction->delivery_date->format('d/m/Y') : '-' }}</td>
                         <td style="font-weight: bold; color: #2563eb;">{{ $transaction->po_number ?? '-' }}</td>
                         <td>{{ $transaction->supplier->nama_supplier ?? '-' }}</td>
                         <td>{{ $transaction->product->name ?? '-' }}</td>

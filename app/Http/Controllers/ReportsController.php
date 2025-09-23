@@ -135,28 +135,8 @@ class ReportsController extends Controller
                 return redirect()->back()->with('error', 'Insufficient permissions');
             }
             
-            // Build grouped-by-PO dataset same as index
-            $query = SalesTransaction::select([
-                'po_number',
-                \DB::raw('MAX(transaction_number) as transaction_number'),
-                \DB::raw('MAX(transaction_date) as transaction_date'),
-                \DB::raw('MAX(delivery_date) as delivery_date'),
-                \DB::raw('MAX(sales_id) as sales_id'),
-                \DB::raw('MAX(supplier_id) as supplier_id'),
-                \DB::raw('MAX(approval_status) as approval_status'),
-                \DB::raw('MAX(approved_by) as approved_by'),
-                \DB::raw('MAX(approved_at) as approved_at'),
-                \DB::raw('MAX(approval_notes) as approval_notes'),
-                \DB::raw('MAX(general_notes) as general_notes'),
-                \DB::raw('MAX(order_acc_by) as order_acc_by'),
-                \DB::raw('COUNT(*) as total_items'),
-                \DB::raw('SUM(CASE WHEN quantity_carton > 0 THEN quantity_carton ELSE quantity_piece END) as total_quantity'),
-                \DB::raw('SUM(CASE WHEN quantity_carton > 0 THEN quantity_carton * unit_price ELSE quantity_piece * unit_price END) as total_amount'),
-                \DB::raw('MIN(created_at) as created_at'),
-                \DB::raw('MAX(updated_at) as updated_at')
-            ])
-            ->with(['sales', 'approver', 'supplier'])
-            ->groupBy('po_number');
+            // Use detailed item rows so product-level columns are populated
+            $query = SalesTransaction::with(['product', 'supplier', 'sales', 'approver']);
 
             // Apply same filters as index
             if ($request->filled('start_date')) {
@@ -181,7 +161,9 @@ class ReportsController extends Controller
                 $query->where('po_number', 'like', '%' . $request->po_number . '%');
             }
 
-            $transactions = $query->orderBy(\DB::raw('MIN(created_at)'), 'desc')->get();
+            $transactions = $query->orderBy('transaction_date', 'desc')
+                                ->orderBy('created_at', 'desc')
+                                ->get();
 
             \Log::info('Excel export data loaded', ['count' => $transactions->count()]);
 
@@ -191,7 +173,7 @@ class ReportsController extends Controller
                 'record_count' => $transactions->count()
             ]);
             
-            return Excel::download(new \App\Exports\POReportExport($transactions, true), $fileName);
+            return Excel::download(new \App\Exports\POReportExport($transactions, false), $fileName);
         } catch (\Exception $e) {
             \Log::error('Excel export failed', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
             return response()->json(['error' => 'Export failed: ' . $e->getMessage()], 500);
@@ -218,28 +200,8 @@ class ReportsController extends Controller
                 return redirect()->back()->with('error', 'Insufficient permissions');
             }
             
-            // Build grouped-by-PO dataset same as index
-            $query = SalesTransaction::select([
-                'po_number',
-                \DB::raw('MAX(transaction_number) as transaction_number'),
-                \DB::raw('MAX(transaction_date) as transaction_date'),
-                \DB::raw('MAX(delivery_date) as delivery_date'),
-                \DB::raw('MAX(sales_id) as sales_id'),
-                \DB::raw('MAX(supplier_id) as supplier_id'),
-                \DB::raw('MAX(approval_status) as approval_status'),
-                \DB::raw('MAX(approved_by) as approved_by'),
-                \DB::raw('MAX(approved_at) as approved_at'),
-                \DB::raw('MAX(approval_notes) as approval_notes'),
-                \DB::raw('MAX(general_notes) as general_notes'),
-                \DB::raw('MAX(order_acc_by) as order_acc_by'),
-                \DB::raw('COUNT(*) as total_items'),
-                \DB::raw('SUM(CASE WHEN quantity_carton > 0 THEN quantity_carton ELSE quantity_piece END) as total_quantity'),
-                \DB::raw('SUM(CASE WHEN quantity_carton > 0 THEN quantity_carton * unit_price ELSE quantity_piece * unit_price END) as total_amount'),
-                \DB::raw('MIN(created_at) as created_at'),
-                \DB::raw('MAX(updated_at) as updated_at')
-            ])
-            ->with(['sales', 'approver', 'supplier'])
-            ->groupBy('po_number');
+            // Use detailed item rows so product-level columns are populated in PDF table
+            $query = SalesTransaction::with(['product', 'supplier', 'sales', 'approver']);
 
             // Apply same filters as index
             if ($request->filled('start_date')) {
@@ -264,7 +226,9 @@ class ReportsController extends Controller
                 $query->where('po_number', 'like', '%' . $request->po_number . '%');
             }
 
-            $transactions = $query->orderBy(\DB::raw('MIN(created_at)'), 'desc')->get();
+            $transactions = $query->orderBy('transaction_date', 'desc')
+                                ->orderBy('created_at', 'desc')
+                                ->get();
 
             \Log::info('PDF export data loaded', ['count' => $transactions->count()]);
 
