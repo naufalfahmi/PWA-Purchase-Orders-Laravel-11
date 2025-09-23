@@ -1,8 +1,8 @@
 const CACHE_NAME = 'munah-pwa-v10';
 const urlsToCache = [
   // Static assets only - no pages that require auth
-  '/build/assets/app-CR2TckGB.css',
-  '/build/assets/app-D2c31c7y.js',
+  '/build/assets/app-CP0OoLXE.css',
+  '/build/assets/app-Dd4mxizw.js',
   '/css/mobile-fallback.css',
   '/css/inter-fonts.css',
   '/js/inline-fallback.js',
