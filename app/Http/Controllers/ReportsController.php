@@ -90,17 +90,43 @@ class ReportsController extends Controller
             'rejected' => 'Rejected'
         ];
 
-        // Calculate summary statistics
+        // Calculate summary statistics using grouped-by-PO
         $collection = $query->get();
         $summary = $this->calculateSummary($collection);
         $monthlyData = $this->getMonthlyData($collection);
-        
-        // Additional chart data
+
+        // Sales and monthly amount charts can use grouped data
         $salesAmountData = $this->getSalesAmountData($collection);
         $monthlyAmountData = $this->getMonthlyAmountData($collection);
-        // Top products/categories are not meaningful at PO level; return empty
-        $topProductsData = ['labels' => [], 'values' => []];
-        $topCategoriesData = ['labels' => [], 'values' => []];
+
+        // Build detailed dataset (no grouping) for product/category charts
+        $detailedQuery = SalesTransaction::with(['product', 'supplier', 'sales', 'approver']);
+        if ($request->filled('start_date')) {
+            $detailedQuery->whereDate('transaction_date', '>=', $request->start_date);
+        }
+        if ($request->filled('end_date')) {
+            $detailedQuery->whereDate('transaction_date', '<=', $request->end_date);
+        }
+        if ($request->filled('delivery_start_date')) {
+            $detailedQuery->whereDate('delivery_date', '>=', $request->delivery_start_date);
+        }
+        if ($request->filled('delivery_end_date')) {
+            $detailedQuery->whereDate('delivery_date', '<=', $request->delivery_end_date);
+        }
+        if ($request->filled('supplier_id')) {
+            $detailedQuery->where('supplier_id', $request->supplier_id);
+        }
+        if ($request->filled('approval_status')) {
+            $detailedQuery->where('approval_status', $request->approval_status);
+        }
+        if ($request->filled('po_number')) {
+            $detailedQuery->where('po_number', 'like', '%' . $request->po_number . '%');
+        }
+        $detailed = $detailedQuery->get();
+
+        // Use detailed transactions to populate product/category charts
+        $topProductsData = $this->getTopProductsData($detailed);
+        $topCategoriesData = $this->getTopCategoriesData($detailed);
 
         return view('reports.index', compact(
             'transactions',

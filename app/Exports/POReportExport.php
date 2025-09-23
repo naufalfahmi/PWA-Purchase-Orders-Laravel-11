@@ -322,11 +322,17 @@ class POReportExport implements FromCollection, WithHeadings, WithMapping, WithS
                 // Add total row
                 $totalRow = $lastRow + 2;
                 $sheet->setCellValue('A' . $totalRow, 'TOTAL KESELURUHAN');
+                // Compute total using (quantity_carton > 0 ? quantity_carton : quantity_piece) * unit_price
+                $computedTotal = $this->transactions->reduce(function($carry, $t) {
+                    $qty = ($t->quantity_carton ?? 0) > 0 ? ($t->quantity_carton ?? 0) : ($t->quantity_piece ?? 0);
+                    $unit = $t->unit_price ?? 0;
+                    return $carry + ($qty * $unit);
+                }, 0);
                 // Total amount column differs between grouped and detailed
                 if ($this->groupedByPO) {
-                    $sheet->setCellValue('H' . $totalRow, $this->transactions->sum('total_amount'));
+                    $sheet->setCellValue('H' . $totalRow, $computedTotal);
                 } else {
-                    $sheet->setCellValue('J' . $totalRow, $this->transactions->sum('total_amount'));
+                    $sheet->setCellValue('J' . $totalRow, $computedTotal);
                 }
                 
                 // Style the total row
@@ -358,14 +364,19 @@ class POReportExport implements FromCollection, WithHeadings, WithMapping, WithS
                 $currentPo = null;
                 $groupStart = $dataStartRow;
                 for ($r = $dataStartRow; $r <= $lastRow; $r++) {
-                    $poValue = $sheet->getCell('C' . $r)->getValue();
+                    $poValueRaw = $sheet->getCell('C' . $r)->getValue();
+                    // Forward-fill: treat empty cells as part of current PO group
+                    $poValue = ($poValueRaw !== null && $poValueRaw !== '') ? $poValueRaw : $currentPo;
+
                     if ($currentPo === null) {
                         $currentPo = $poValue;
                         $groupStart = $r;
                     }
-                    if ($poValue !== $currentPo || $r === $lastRow) {
+
+                    $isBoundary = ($poValue !== $currentPo) || ($r === $lastRow);
+                    if ($isBoundary) {
                         $groupEnd = ($poValue !== $currentPo) ? ($r - 1) : $r;
-                        if ($groupEnd > $groupStart) {
+                        if ($groupEnd >= $groupStart) {
                             foreach (['A','B','C','D','Q'] as $col) {
                                 $sheet->mergeCells($col . $groupStart . ':' . $col . $groupEnd);
                                 $sheet->getStyle($col . $groupStart . ':' . $col . $groupEnd)->getAlignment()

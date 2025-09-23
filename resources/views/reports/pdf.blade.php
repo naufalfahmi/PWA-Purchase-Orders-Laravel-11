@@ -209,8 +209,16 @@
         <h3>Ringkasan Data</h3>
         <?php
             $totalTransactions = $transactions->groupBy('po_number')->count();
-            $totalAmount = $transactions->sum('total_amount');
-            $totalQuantity = $transactions->sum('total_quantity_piece');
+            // Match row logic: use quantity_carton if > 0 else quantity_piece, then multiply by unit_price
+            $totalAmount = $transactions->reduce(function($carry, $t){
+                $qty = ($t->quantity_carton ?? 0) > 0 ? ($t->quantity_carton ?? 0) : ($t->quantity_piece ?? 0);
+                $unit = $t->unit_price ?? 0;
+                return $carry + ($qty * $unit);
+            }, 0);
+            $totalQuantity = $transactions->reduce(function($carry, $t){
+                $qty = ($t->quantity_carton ?? 0) > 0 ? ($t->quantity_carton ?? 0) : ($t->quantity_piece ?? 0);
+                return $carry + $qty;
+            }, 0);
             $supplierCounts = $transactions->groupBy(function($t){ return optional($t->supplier)->nama_supplier ?: 'N/A'; })->count();
         ?>
         <div class="summary-grid">
