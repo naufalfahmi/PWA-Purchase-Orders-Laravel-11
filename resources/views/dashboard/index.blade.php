@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Dashboard - Admin PWA')
+@section('title', 'Dashboard - Munah - Purchase Orders')
 @section('page-title', 'Dashboard')
 
 @section('content')

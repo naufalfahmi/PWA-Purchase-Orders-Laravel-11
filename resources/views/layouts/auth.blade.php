@@ -4,13 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>@yield('title', 'Login - Admin PWA')</title>
+    <title>@yield('title', 'Login - Munah - Purchase Orders')</title>
     
     <!-- PWA Meta Tags -->
     <meta name="theme-color" content="#2563eb">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <meta name="apple-mobile-web-app-title" content="Admin PWA">
+    <meta name="apple-mobile-web-app-title" content="Munah - Purchase Orders">
     
     <!-- PWA Icons -->
     <link rel="apple-touch-icon" href="{{ asset('icons/icon-192x192.png') }}">

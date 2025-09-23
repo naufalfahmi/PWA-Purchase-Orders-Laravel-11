@@ -33,7 +33,7 @@ function showInstallBanner() {
         banner.innerHTML = `
             <div class="flex items-center justify-between">
                 <div>
-                    <h3 class="font-semibold">Install Admin PWA</h3>
+                    <h3 class="font-semibold">Install Munah - Purchase Orders</h3>
                     <p class="text-sm opacity-90">Install app for better experience</p>
                 </div>
                 <div class="flex space-x-2">

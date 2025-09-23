@@ -1,7 +1,7 @@
 {
-  "name": "Admin PWA",
-  "short_name": "AdminPWA",
-  "description": "Aplikasi Admin PWA untuk manajemen barang dan purchase order",
+  "name": "Munah - Purchase Orders",
+  "short_name": "Munah PO",
+  "description": "Aplikasi Munah untuk manajemen purchase order",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",

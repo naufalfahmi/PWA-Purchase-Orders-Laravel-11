@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Tambah Barang - Admin PWA')
+@section('title', 'Tambah Barang - Munah - Purchase Orders')
 @section('page-title', 'Tambah Barang')
 
 @section('content')

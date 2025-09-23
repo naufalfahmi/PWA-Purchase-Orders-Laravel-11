@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Input PO (Bulk) - Admin PWA')
+@section('title', 'Input PO (Bulk) - Munah - Purchase Orders')
 @section('page-title', 'Input PO')
 
 <style>

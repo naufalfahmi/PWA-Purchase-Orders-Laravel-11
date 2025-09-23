@@ -9,7 +9,7 @@
 
 @extends('layouts.app')
 
-@section('title', 'Detail PO - Admin PWA')
+@section('title', 'Detail PO - Munah - Purchase Orders')
 @section('page-title', 'Detail PO')
 
 @section('content')

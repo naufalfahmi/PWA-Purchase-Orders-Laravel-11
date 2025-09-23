@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Purchase Orders - Admin PWA')
+@section('title', 'Purchase Orders - Munah - Purchase Orders')
 @section('page-title', 'Purchase Orders')
 
 

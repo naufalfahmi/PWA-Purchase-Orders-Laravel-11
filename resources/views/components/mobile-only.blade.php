@@ -17,7 +17,7 @@ $isMobile = request()->header('User-Agent') &&
         </div>
         
         <!-- Title -->
-        <h1 class="text-2xl font-bold text-gray-900 mb-4">Admin PWA Mobile</h1>
+        <h1 class="text-2xl font-bold text-gray-900 mb-4">Munah - Purchase Orders</h1>
         
         <!-- Description -->
         <p class="text-gray-600 mb-6 leading-relaxed">
@@ -61,7 +61,7 @@ $isMobile = request()->header('User-Agent') &&
         
         <!-- Footer -->
         <p class="text-xs text-gray-400 mt-6">
-            Admin PWA v1.0 - Mobile First Design
+            Munah - Purchase Orders v1.0 - Mobile First Design
         </p>
     </div>
 </div>

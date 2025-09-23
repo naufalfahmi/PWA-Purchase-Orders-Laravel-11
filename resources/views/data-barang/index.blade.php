@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Data Barang - Admin PWA')
+@section('title', 'Data Barang - Munah - Purchase Orders')
 @section('page-title', 'Data Barang')
 
 @section('content')
@@ -70,7 +70,7 @@
     <!-- Products List -->
     <div id="productsList" class="space-y-3 hidden">
         @forelse($products as $product)
-            <a href="{{ route('data-barang.show', $product) }}" class="block card p-4 product-item hover:shadow-lg transition-shadow duration-200 cursor-pointer" data-supplier-id="{{ $product->supplier_id }}">
+            <a href="{{ route('data-barang.show', $product) }}" class="block card p-4 product-item hover:shadow-lg transition-shadow duration-200 cursor-pointer" data-supplier-id="{{ $product->supplier_id }}" data-name="{{ $product->name }}" data-sku="{{ $product->sku }}" data-category="{{ $product->category }}">
                 <div class="flex items-start space-x-4">
                     <!-- Product Icon/Image Placeholder -->
                     <div class="flex-shrink-0 w-16 h-16 bg-gradient-to-br from-blue-100 to-blue-200 rounded-lg flex items-center justify-center">
@@ -284,7 +284,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Create product HTML
     function createProductHtml(product) {
         return `
-            <div class="card p-4 product-item hover:shadow-lg transition-shadow duration-200" data-supplier-id="${product.supplier_id}">
+            <div class="card p-4 product-item hover:shadow-lg transition-shadow duration-200" data-supplier-id="${product.supplier_id}" data-name="${product.name || ''}" data-sku="${product.sku || ''}" data-category="${product.category || ''}">
                 <div class="flex items-start space-x-4">
                     <!-- Product Icon/Image Placeholder -->
                     <div class="flex-shrink-0 w-16 h-16 bg-gradient-to-br from-blue-100 to-blue-200 rounded-lg flex items-center justify-center">
@@ -380,14 +380,16 @@ document.addEventListener('DOMContentLoaded', function() {
         let visibleCount = 0;
         
         productItems.forEach(item => {
-            const productName = item.querySelector('h3').textContent.toLowerCase();
-            const sku = item.querySelector('p').textContent.toLowerCase();
-            const itemSupplierId = item.dataset.supplierId;
+            const productName = (item.dataset.name || '').toLowerCase();
+            const sku = (item.dataset.sku || '').toLowerCase();
+            const category = (item.dataset.category || '').toLowerCase();
+            const itemSupplierId = item.dataset.supplierId || '';
             
-            // Check search term match
+            // Check search term match across name, SKU, and category
             const searchMatch = currentSearchTerm === '' || 
                                productName.includes(currentSearchTerm) || 
-                               sku.includes(currentSearchTerm);
+                               sku.includes(currentSearchTerm) ||
+                               category.includes(currentSearchTerm);
             
             // Check supplier filter match
             const supplierMatch = currentSupplierId === '' || 
