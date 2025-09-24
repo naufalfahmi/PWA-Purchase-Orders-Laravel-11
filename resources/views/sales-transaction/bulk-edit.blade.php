@@ -311,7 +311,7 @@
             <div class="lg:col-span-2"></div> <!-- Empty space for alignment -->
             <div class="lg:col-span-2">
                 <label class="block text-sm font-medium text-gray-700 mb-2">Harga Satuan</label>
-                <input type="number" name="products[INDEX][unit_price]" step="0.01" min="0" class="input-field unit-price w-full" oninput="calculateRowTotal(this)" placeholder="0" readonly>
+                <input type="number" name="products[INDEX][unit_price]" step="0.01" min="0" class="input-field unit-price w-full" oninput="calculateRowTotal(this)" placeholder="0">
             </div>
         </div>
         
@@ -691,8 +691,10 @@ function updateProductInfo(select) {
         productId: select.value
     });
     
-    // Set unit price
-    unitPriceInput.value = price;
+    // Set unit price only if it's empty (suggest default price)
+    if (!unitPriceInput.value || unitPriceInput.value === '0') {
+        unitPriceInput.value = price;
+    }
     
     // Reset quantities
     cartonInput.value = '0';
@@ -1174,10 +1176,15 @@ function populateProductRow(row, transaction) {
                         console.log('Set piece quantity to:', pieceInput.value);
                     }
                     
-                    // Set unit price
+                    // Set unit price (preserve existing value if user has modified it)
                     if (unitPriceInput) {
-                        unitPriceInput.value = transaction.unit_price || 0;
-                        console.log('Set unit price to:', unitPriceInput.value);
+                        // Only set if empty or if it's the default price from product selection
+                        if (!unitPriceInput.value || unitPriceInput.value === '0') {
+                            unitPriceInput.value = transaction.unit_price || 0;
+                            console.log('Set unit price to:', unitPriceInput.value);
+                        } else {
+                            console.log('Preserving existing unit price:', unitPriceInput.value);
+                        }
                     }
                     
                     // Set notes
@@ -1919,7 +1926,7 @@ if (document.readyState === 'loading') {
                             <div class="lg:col-span-2"></div> <!-- Empty space for alignment -->
                             <div class="lg:col-span-2">
                                 <label class="block text-sm font-medium text-gray-700 mb-2">Harga Satuan</label>
-                                <input type="number" name="products[{{ $i }}][unit_price]" step="0.01" min="0" class="input-field unit-price w-full" oninput="calculateRowTotal(this)" placeholder="0" value="{{ $t->unit_price }}" readonly>
+                                <input type="number" name="products[{{ $i }}][unit_price]" step="0.01" min="0" class="input-field unit-price w-full" oninput="calculateRowTotal(this)" placeholder="0" value="{{ $t->unit_price }}">
                             </div>
                         </div>
                         

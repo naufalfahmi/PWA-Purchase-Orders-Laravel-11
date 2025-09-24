@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('title', 'Return - Coming Soon - Munah - Purchase Orders')
-@section('page-title', 'Return')
+@section('page-title', 'Purchase Return')
 
 @section('content')
 <div class="min-h-screen bg-gray-50">

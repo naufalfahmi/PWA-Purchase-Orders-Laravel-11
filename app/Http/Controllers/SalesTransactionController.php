@@ -9,6 +9,8 @@ use App\Models\Sales;
 use App\Models\Supplier;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
+use Dompdf\Dompdf;
+use Dompdf\Options;
 
 class SalesTransactionController extends Controller
 {
@@ -975,6 +977,75 @@ class SalesTransactionController extends Controller
         $indexes = array_values(array_unique($indexes));
         sort($indexes);
         return $indexes;
+    }
+
+    public function exportPdf($poNumber)
+    {
+        try {
+            \Log::info('PDF export started', ['user_id' => auth()->id(), 'po_number' => $poNumber]);
+            
+            // Check authentication
+            if (!auth()->check()) {
+                \Log::error('PDF export failed - not authenticated');
+                return redirect()->route('login')->with('error', 'Please login first');
+            }
+            
+            $transactions = SalesTransaction::where('po_number', $poNumber)
+                ->with(['product.supplier', 'sales', 'receiver'])
+                ->get();
+
+            if ($transactions->isEmpty()) {
+                \Log::error('PDF export failed - PO not found', ['po_number' => $poNumber]);
+                return redirect()->back()->with('error', 'PO tidak ditemukan');
+            }
+
+            // Check authorization
+            $user = auth()->user();
+            if ($user->role === 'sales') {
+                $currentSales = Sales::where('name', $user->name)->first();
+                if (!$currentSales || $transactions->first()->sales_id !== $currentSales->id) {
+                    \Log::error('PDF export failed - insufficient access', ['user_id' => $user->id, 'po_number' => $poNumber]);
+                    return redirect()->back()->with('error', 'Anda tidak memiliki akses ke PO ini');
+                }
+            }
+
+            \Log::info('PDF export data loaded', ['count' => $transactions->count()]);
+
+            $html = view('sales-transaction.pdf', compact('transactions'))->render();
+            
+            $options = new Options();
+            $options->set('defaultFont', 'Arial');
+            $options->set('isRemoteEnabled', true);
+            
+            $dompdf = new Dompdf($options);
+            $dompdf->loadHtml($html);
+            $dompdf->setPaper('A4', 'portrait');
+            $dompdf->render();
+
+            $fileName = 'PO_' . $poNumber . '_' . now()->format('Y-m-d_H-i-s') . '.pdf';
+            $output = $dompdf->output();
+
+            \Log::info('PDF export completed', ['file_size' => strlen($output)]);
+
+            $response = response($output, 200);
+            $response->headers->set('Content-Type', 'application/pdf');
+            $response->headers->set('Content-Disposition', 'attachment; filename="' . $fileName . '"');
+            $response->headers->set('Content-Length', strlen($output));
+            $response->headers->set('Cache-Control', 'no-cache, no-store, must-revalidate');
+            $response->headers->set('Pragma', 'no-cache');
+            $response->headers->set('Expires', '0');
+            $response->headers->set('Accept-Ranges', 'bytes');
+            $response->headers->set('X-Content-Type-Options', 'nosniff');
+            $response->headers->set('X-Frame-Options', 'SAMEORIGIN');
+            $response->headers->set('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'");
+            $response->headers->set('Cross-Origin-Embedder-Policy', 'unsafe-none');
+            $response->headers->set('Cross-Origin-Opener-Policy', 'same-origin');
+            
+            return $response;
+        } catch (\Exception $e) {
+            \Log::error('PDF export failed', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
+            return response()->json(['error' => 'Export failed: ' . $e->getMessage()], 500);
+        }
     }
 
 }

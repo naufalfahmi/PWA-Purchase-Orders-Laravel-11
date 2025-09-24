@@ -164,20 +164,20 @@
     </div>
 
     <!-- Status Filter -->
-    <div class="flex space-x-2 overflow-x-auto pb-2">
-        <button onclick="filterByStatus('')" class="px-4 py-2 text-sm font-medium rounded-full whitespace-nowrap transition-colors {{ request('approval_status') === null ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
+    <div id="statusFilterContainer" class="flex space-x-2 overflow-x-auto pb-2 scroll-smooth">
+        <button id="statusAll" onclick="filterByStatus('')" class="px-4 py-2 text-sm font-medium rounded-full whitespace-nowrap transition-all duration-300 {{ request('approval_status') === null ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
             Semua
         </button>
-        <button onclick="filterByStatus('pending')" class="px-4 py-2 text-sm font-medium rounded-full whitespace-nowrap transition-colors {{ request('approval_status') === 'pending' ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
+        <button id="statusPending" onclick="filterByStatus('pending')" class="px-4 py-2 text-sm font-medium rounded-full whitespace-nowrap transition-all duration-300 {{ request('approval_status') === 'pending' ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
             Pending
         </button>
-        <button onclick="filterByStatus('approved')" class="px-4 py-2 text-sm font-medium rounded-full whitespace-nowrap transition-colors {{ request('approval_status') === 'approved' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
+        <button id="statusApproved" onclick="filterByStatus('approved')" class="px-4 py-2 text-sm font-medium rounded-full whitespace-nowrap transition-all duration-300 {{ request('approval_status') === 'approved' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
             Approved
         </button>
-        <button onclick="filterByStatus('rejected')" class="px-4 py-2 text-sm font-medium rounded-full whitespace-nowrap transition-colors {{ request('approval_status') === 'rejected' ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
+        <button id="statusRejected" onclick="filterByStatus('rejected')" class="px-4 py-2 text-sm font-medium rounded-full whitespace-nowrap transition-all duration-300 {{ request('approval_status') === 'rejected' ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
             Rejected
         </button>
-        <button onclick="filterByStatus('received')" class="px-4 py-2 text-sm font-medium rounded-full whitespace-nowrap transition-colors {{ request('approval_status') === 'received' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
+        <button id="statusReceived" onclick="filterByStatus('received')" class="px-4 py-2 text-sm font-medium rounded-full whitespace-nowrap transition-all duration-300 {{ request('approval_status') === 'received' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
             Received
         </button>
     </div>
@@ -572,6 +572,41 @@ function filterByStatus(status) {
     window.location.href = url.toString();
 }
 
+// Status filter scroll animation function
+function startStatusFilterAnimation() {
+    // Only run animation on first load (no existing filters)
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('approval_status') || urlParams.get('search') || urlParams.get('toko') || urlParams.get('start_date') || urlParams.get('end_date') || urlParams.get('supplier_id')) {
+        return; // Skip animation if filters are already applied
+    }
+    
+    const container = document.getElementById('statusFilterContainer');
+    if (!container) return;
+    
+    // Get the last button (Received) to scroll to
+    const lastButton = document.getElementById('statusReceived');
+    if (!lastButton) return;
+    
+    // Start animation after a short delay
+    setTimeout(() => {
+        // Scroll to the right (to the last button)
+        lastButton.scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'nearest', 
+            inline: 'end' 
+        });
+        
+        // After scrolling to the right, scroll back to the left
+        setTimeout(() => {
+            container.scrollTo({
+                left: 0,
+                behavior: 'smooth'
+            });
+        }, 1500); // Wait 1.5 seconds before scrolling back
+        
+    }, 2000); // Start after 2 seconds
+}
+
 
 // Clear search function
 function clearSearch() {
@@ -933,6 +968,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Show initial skeleton loading
     showInitialSkeletonLoading();
+    
+    // Start status filter animation on first load
+    startStatusFilterAnimation();
     
     // Hide skeleton and show real content after a short delay
     setTimeout(() => {

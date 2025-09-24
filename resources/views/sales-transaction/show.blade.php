@@ -233,33 +233,68 @@
             </div>
         @endif
 
-        <div class="flex justify-center space-x-3">
-            <a href="{{ route('sales-transaction.index') }}" class="btn-secondary">Kembali</a>
-            @php
-                $poNumber = $transactions->first()->po_number ?? null;
-            @endphp
+        @php
+            $poNumber = $transactions->first()->po_number ?? null;
+            $canDelete = false;
+            $user = Auth::user();
+            $transaction = $transactions->first();
+            
+            if ($user->isOwner()) {
+                $canDelete = true;
+            } elseif ($user->isSales()) {
+                $currentSales = \App\Models\Sales::where('name', $user->name)->first();
+                $canDelete = $currentSales && ($transaction->sales_id === $currentSales->id);
+            }
+        @endphp
+        
+        <div class="flex flex-wrap gap-2 justify-center sm:justify-start">
+            <!-- Kembali Button -->
+            <a href="{{ route('sales-transaction.index') }}" 
+               class="inline-flex items-center gap-2 px-4 py-2 bg-gray-600 text-white text-sm font-medium rounded-lg hover:bg-gray-700 transition-colors duration-200">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                </svg>
+                Kembali
+            </a>
+            
             @if($poNumber)
-                <a href="{{ route('sales-transaction.edit-po', $poNumber) }}" class="btn-primary">Edit PO</a>
-                @php
-                    $canDelete = false;
-                    if (Auth::user()->isOwner()) {
-                        $canDelete = true;
-                    } elseif (Auth::user()->isSales()) {
-                        $currentSales = \App\Models\Sales::where('name', Auth::user()->name)->first();
-                        $canDelete = $currentSales && ($transactions->first()->sales_id === $currentSales->id) && $transactions->first()->isPending();
-                    }
-                @endphp
-                @if($canDelete)
-                <form action="{{ route('sales-transaction.delete-po', $poNumber) }}" method="POST" onsubmit="return confirmDeletePO(event)" style="display:inline-block;">
+                <!-- Edit Button -->
+                <a href="{{ route('sales-transaction.edit-po', $poNumber) }}" 
+                   class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors duration-200">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                    </svg>
+                    Edit
+                </a>
+                
+                <!-- Export PDF Button -->
+                <a href="{{ route('sales-transaction.export-pdf', $poNumber) }}" 
+                   class="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors duration-200">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                    PDF
+                </a>
+                
+                <!-- Delete PO Button -->
+                <form action="{{ route('sales-transaction.delete-po', $poNumber) }}" method="POST" onsubmit="return confirmDeletePO(event)" class="inline-block">
                     @csrf
                     @method('DELETE')
-                    <button type="submit" class="btn-danger" style="background-color:#dc2626; color:white; padding:8px 12px; border-radius:8px;">
-                        Hapus PO
+                    <button type="submit" 
+                            class="inline-flex items-center gap-2 px-4 py-2 text-white text-sm font-medium rounded-lg transition-colors duration-200"
+                            style="background-color: #dc2626;"
+                            onmouseover="this.style.backgroundColor='#b91c1c'"
+                            onmouseout="this.style.backgroundColor='#dc2626'">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                        </svg>
+                        Hapus
                     </button>
                 </form>
-                @endif
             @endif
         </div>
+        
+        
     </div>
 </div>
 

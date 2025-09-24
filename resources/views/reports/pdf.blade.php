@@ -2,378 +2,319 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Laporan PO - {{ now()->format('d/m/Y') }}</title>
+    <title>Laporan Purchase Order</title>
     <style>
         body {
-            font-family: 'DejaVu Sans', sans-serif;
-            font-size: 10px;
-            line-height: 1.4;
-            color: #333;
+            font-family: Arial, sans-serif;
             margin: 0;
-            padding: 20px;
+            padding: 40px;
         }
-        
-        .company-header {
-            text-align: center;
-            margin-bottom: 30px;
-            border-bottom: 2px solid #333;
-            padding-bottom: 20px;
-        }
-        
-        .company-logo h1 {
-            margin: 0;
-            font-size: 24px;
-            color: #2c3e50;
-        }
-        
-        .company-details {
-            margin-top: 10px;
-        }
-        
-        .company-details p {
-            margin: 5px 0;
-            font-size: 11px;
-            color: #666;
-        }
-        
-        .report-title {
-            text-align: center;
-            margin: 20px 0;
-        }
-        
-        .report-title h2 {
-            margin: 0;
-            font-size: 18px;
-            color: #2c3e50;
-        }
-        
-        .report-title p {
-            margin: 5px 0;
-            font-size: 11px;
-            color: #666;
-        }
-        
-        .summary {
-            background-color: #f8fafc;
-            border: 1px solid #e2e8f0;
-            border-radius: 8px;
-            padding: 15px;
-            margin-bottom: 20px;
-        }
-        
-        .summary h3 {
-            font-size: 14px;
-            font-weight: bold;
-            color: #1e293b;
-            margin: 0 0 10px 0;
-        }
-        
-        .summary-grid {
-            display: table;
-            width: 100%;
-        }
-        
-        .summary-item {
-            display: table-cell;
-            width: 25%;
-            text-align: center;
-            padding: 10px;
-        }
-        
-        .summary-value {
-            font-size: 16px;
-            font-weight: bold;
-            color: #2563eb;
-            display: block;
-        }
-        
-        .summary-label {
-            font-size: 10px;
-            color: #64748b;
-            margin-top: 5px;
-        }
-        
-        .table {
+        .header-table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 20px;
+            margin-bottom: 20px;
+            table-layout: fixed;
         }
-        
-        .table th {
-            background-color: #2563eb;
-            color: white;
+        .header-table td {
+            padding: 10px;
+        }
+        .page-header {
+            page-break-inside: avoid;
+            margin-bottom: 20px;
+        }
+        .page-content {
+            margin-top: 0;
+        }
+        @page {
+            margin-top: 0;
+        }
+        .table-header-repeat {
+            page-break-inside: avoid;
+        }
+        .company-info {
+            font-size: 12px;
+            line-height: 1.4;
+        }
+        .company-info h1 {
+            margin-bottom: 8px;
+            font-size: 16px;
             font-weight: bold;
-            padding: 8px 6px;
-            text-align: left;
-            border: 1px solid #1d4ed8;
-            font-size: 9px;
         }
-        
-        .table td {
-            padding: 6px;
-            border: 1px solid #d1d5db;
-            font-size: 9px;
+        .company-info p {
+            margin: 3px 0;
+        }
+        .po-details {
+            text-align: right;
+            font-size: 12px;
+            line-height: 1.4;
+        }
+        .po-details p {
+            margin: 4px 0;
+        }
+        hr {
+            border: 0;
+            border-top: 1px solid #000;
+        }
+        .info-section {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+        .info-section-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+            table-layout: fixed;
+        }
+        .info-section-table td {
+            width: 50%;
+            vertical-align: top;
+            padding: 0 10px;
+        }
+        .info-left, .info-right {
+            width: 50%;
+        }
+        .info-left h2, .info-right h2 {
+            font-size: 13px;
+            margin-bottom: 5px;
+            text-decoration: underline;
+        }
+        .info-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 11px;
+            margin-top: 5px;
+        }
+        .info-table td {
+            padding: 4px 0;
             vertical-align: top;
         }
-        
-        .table tr:nth-child(even) {
-            background-color: #f8fafc;
-        }
-        
-        .table tr:hover {
-            background-color: #f1f5f9;
-        }
-        
-        .status-pending {
-            background-color: #fef3c7;
-            color: #92400e;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-size: 8px;
+        .info-table td:first-child {
+            width: 30%;
             font-weight: bold;
         }
-        
-        .status-approved {
-            background-color: #d1fae5;
-            color: #065f46;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-size: 8px;
-            font-weight: bold;
-        }
-        
-        .status-rejected {
-            background-color: #fee2e2;
-            color: #991b1b;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-size: 8px;
-            font-weight: bold;
-        }
-        
-        .status-received {
-            background-color: #dbeafe;
-            color: #1e40af;
-            padding: 4px 6px;
-            border-radius: 4px;
-            font-size: 8px;
-            font-weight: bold;
-            line-height: 1.2;
-            display: inline-block;
+        .info-table td:nth-child(2) {
+            width: 5%;
             text-align: center;
         }
-        
-        .status-received small {
-            font-size: 6px;
-            font-weight: normal;
-            opacity: 0.9;
+        .info-table td:last-child {
+            width: 65%;
         }
-        
-        .text-right {
+        .purchase-order-info {
             text-align: right;
+            font-size: 12px;
+            line-height: 1.4;
         }
-        
-        .text-center {
+        .purchase-order-info p {
+            margin: 4px 0;
+        }
+        .item-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+            font-size: 12px;
+            table-layout: fixed;
+        }
+        .item-table th, .item-table td {
+            border: 1px solid #000;
+            padding: 10px 8px;
             text-align: center;
+            vertical-align: middle;
         }
-        
-        .footer {
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 1px solid #e2e8f0;
-            text-align: center;
-            font-size: 8px;
-            color: #64748b;
+        .item-table th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+            font-size: 11px;
         }
-        
-        .page-break {
-            page-break-before: always;
+        .item-table .text-left {
+            text-align: left;
         }
-        
-        .no-data {
-            text-align: center;
-            padding: 40px;
-            color: #64748b;
-            font-style: italic;
+        .item-table td:first-child {
+            width: 35%;
+        }
+        .item-table td:nth-child(2),
+        .item-table td:nth-child(3),
+        .item-table td:nth-child(4) {
+            width: 12%;
+        }
+        .item-table td:nth-child(5),
+        .item-table td:nth-child(6) {
+            width: 15%;
+        }
+        .footer-section {
+            display: flex;
+            justify-content: space-between;
+        }
+        .special-instruction {
+            width: 45%;
+        }
+        .special-instruction h3 {
+            font-size: 14px;
+            margin-bottom: 5px;
+        }
+        .instruction-box {
+            border: 1px solid #000;
+            padding: 10px;
+            height: 50px;
+        }
+        .contact-info {
+            width: 45%;
+        }
+        .contact-info p {
+            margin: 4px 0;
+            font-size: 12px;
+            line-height: 1.4;
         }
     </style>
 </head>
 <body>
-    <!-- Company Header -->
-    <div class="company-header">
-        <div class="company-logo">
-            <h1>{{ \App\Helpers\SettingsHelper::companyName() }}</h1>
-        </div>
-        <div class="company-details">
-            <p>{{ \App\Helpers\SettingsHelper::companyAddress() }}</p>
-            <p>Telp: {{ \App\Helpers\SettingsHelper::companyPhone() }} | Email: {{ \App\Helpers\SettingsHelper::companyEmail() }}</p>
-            <p>Website: {{ \App\Helpers\SettingsHelper::companyWebsite() }}</p>
-        </div>
-    </div>
-    
-    <!-- Report Title -->
-    <div class="report-title">
-        <h2>{{ \App\Helpers\SettingsHelper::exportHeaderTitle() }}</h2>
-        <p>Periode Transaksi: {{ request('start_date') ? \Carbon\Carbon::parse(request('start_date'))->format('d M Y') : 'Semua' }} - {{ request('end_date') ? \Carbon\Carbon::parse(request('end_date'))->format('d M Y') : 'Semua' }}</p>
-        @if(request('delivery_start_date') || request('delivery_end_date'))
-        <p>Periode Pengiriman: {{ request('delivery_start_date') ? \Carbon\Carbon::parse(request('delivery_start_date'))->format('d M Y') : 'Semua' }} - {{ request('delivery_end_date') ? \Carbon\Carbon::parse(request('delivery_end_date'))->format('d M Y') : 'Semua' }}</p>
-        @endif
-        <p>Dicetak pada: {{ now()->format('d F Y H:i:s') }}</p>
-    </div>
-
-    <!-- Summary -->
-    <div class="summary">
-        <h3>Ringkasan Data</h3>
-        <?php
-            $totalTransactions = $transactions->groupBy('po_number')->count();
-            // Use total_amount and total_quantity_piece from database
-            $totalAmount = $transactions->sum('total_amount');
-            $totalQuantity = $transactions->sum('total_quantity_piece');
-            $supplierCounts = $transactions->groupBy(function($t){ return optional($t->supplier)->nama_supplier ?: 'N/A'; })->count();
-        ?>
-        <div class="summary-grid">
-            <div class="summary-item">
-                <span class="summary-value">{{ number_format($totalTransactions) }}</span>
-                <div class="summary-label">Total Transaksi</div>
-            </div>
-            <div class="summary-item">
-                <span class="summary-value">Rp {{ number_format($totalAmount, 0, ',', '.') }}</span>
-                <div class="summary-label">Total Nilai</div>
-            </div>
-            <div class="summary-item">
-                <span class="summary-value">{{ number_format($totalQuantity) }}</span>
-                <div class="summary-label">Total Quantity</div>
-            </div>
-            <div class="summary-item">
-                <span class="summary-value">{{ $supplierCounts }}</span>
-                <div class="summary-label">Jumlah Supplier</div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Data Table -->
     @if($transactions->count() > 0)
-        <table class="table">
-            <thead>
-                <tr>
-                    <th style="width: 3%;">No</th>
-                    <th style="width: 8%;">Tanggal</th>
-                    <th style="width: 8%;">Pengiriman</th>
-                    <th style="width: 12%;">PO Number</th>
-                    <th style="width: 15%;">Supplier</th>
-                    <th style="width: 20%;">Produk</th>
-                    <th style="width: 8%;">Kategori</th>
-                    <th style="width: 6%;">Qty Karton</th>
-                    <th style="width: 6%;">Qty Piece</th>
-                    
-                    <th style="width: 10%;">Harga Satuan</th>
-                    <th style="width: 10%;">Total Harga</th>
-                    <th style="width: 8%;">Status</th>
-                    <th style="width: 12%;">Approver</th>
-                    <th style="width: 12%;">Diterima Oleh</th>
-                    <th style="width: 10%;">Tanggal Diterima</th>
-                </tr>
-            </thead>
-            <tbody>
-                @php $poIndex = 0; @endphp
-                @foreach($transactions->groupBy('po_number') as $poNumber => $poGroup)
-                    @php 
-                        $poIndex++;
-                        $rowspan = $poGroup->count();
-                        $first = $poGroup->first();
-                    @endphp
-                    @foreach($poGroup as $rowIndex => $transaction)
+        @php $isFirstPage = true; @endphp
+        
+        @foreach($transactions->groupBy('po_number') as $poNumber => $poGroup)
+            @if($isFirstPage)
+                <!-- Header untuk halaman pertama -->
+                <div class="page-header">
+                    <table class="header-table">
                         <tr>
-                            @if($rowIndex === 0)
-                                <td class="text-center" rowspan="{{ $rowspan }}">{{ $poIndex }}</td>
-                                <td rowspan="{{ $rowspan }}">{{ $first->transaction_date ? $first->transaction_date->format('d/m/Y') : '-' }}</td>
-                                <td rowspan="{{ $rowspan }}">{{ $first->delivery_date ? $first->delivery_date->format('d/m/Y') : '-' }}</td>
-                                <td rowspan="{{ $rowspan }}" style="font-weight: bold; color: #2563eb;">{{ $poNumber ?? '-' }}</td>
-                                <td rowspan="{{ $rowspan }}">{{ optional($first->supplier)->nama_supplier ?? '-' }}</td>
-                            @endif
-                            <td>{{ $transaction->product->name ?? '-' }}</td>
-                            <td>{{ $transaction->product->category ?? '-' }}</td>
-                            <td class="text-center">{{ $transaction->quantity_carton ?? 0 }}</td>
-                            <td class="text-center">{{ $transaction->quantity_piece ?? 0 }}</td>
-                            <td class="text-right">Rp {{ number_format($transaction->unit_price ?? 0, 0, ',', '.') }}</td>
-                            <td class="text-right">Rp {{ number_format($transaction->total_amount ?? 0, 0, ',', '.') }}</td>
-                            @if($rowIndex === 0)
-                                <td class="text-center" rowspan="{{ $rowspan }}">
-                                    @if($first->received_at)
-                                        <span class="status-received">
-                                            Received<br>
-                                            <small>{{ \Carbon\Carbon::parse($first->received_at)->format('d/m/Y H:i:s') }}</small><br>
-                                            <small>{{ optional($first->receiver)->name ?? '-' }}</small>
-                                        </span>
-                                    @elseif($first->approval_status == 'pending')
-                                        <span class="status-pending">Pending</span>
-                                    @elseif($first->approval_status == 'approved')
-                                        <span class="status-approved">Approved</span>
-                                    @elseif($first->approval_status == 'rejected')
-                                        <span class="status-rejected">Rejected</span>
-                                    @else
-                                        <span class="status-pending">{{ ucfirst($first->approval_status) }}</span>
-                                    @endif
-                                </td>
-                                <td rowspan="{{ $rowspan }}">{{ optional($first->approver)->name ?? '-' }}</td>
-                                <td rowspan="{{ $rowspan }}">{{ optional($first->receiver)->name ?? '-' }}</td>
-                                <td rowspan="{{ $rowspan }}">{{ $first->received_at ? \Carbon\Carbon::parse($first->received_at)->format('d/m/Y H:i:s') : '-' }}</td>
-                            @endif
+                            <td>
+                                <div class="company-info">
+                                    <h1>PT Sultan Zahra Monajaya Sejahtera</h1>
+                                    <p>Jl. Raya Susukan No. 10, RT.1/RW.3, Susukan</p>
+                                    <p>Kecamatan Bojonggede, Kabupaten Bogor, Jawa Barat 16920</p>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="po-details">
+                                    <p><strong>Date</strong>    : {{ now()->format('d F Y') }}</p>
+                                    <p><strong>Report Type</strong> : Laporan Purchase Order</p>
+                                    <p><strong>Periode</strong>: {{ request('start_date') ? \Carbon\Carbon::parse(request('start_date'))->format('d M Y') : 'Semua' }} - {{ request('end_date') ? \Carbon\Carbon::parse(request('end_date'))->format('d M Y') : 'Semua' }}</p>
+                                    <p><strong>Dicetak pada: {{ now()->format('d F Y H:i:s') }}</strong></p>
+                                </div>
+                            </td>
+                        </tr>
+                    </table>
+                    <hr>
+                </div>
+                
+                <!-- Summary hanya di halaman pertama -->
+                <table class="info-section-table">
+                    <tr>
+                        <td class="info-left">
+                            <h2>SUMMARY INFORMATION</h2>
+                            <table class="info-table">
+                                <tr>
+                                    <td>TOTAL TRANSACTION</td>
+                                    <td>:</td>
+                                    <td>{{ $transactions->groupBy('po_number')->count() }}</td>
+                                </tr>
+                                <tr>
+                                    <td>TOTAL AMOUNT</td>
+                                    <td>:</td>
+                                    <td>Rp {{ number_format($transactions->sum('total_amount'), 0, ',', '.') }}</td>
+                                </tr>
+                            </table>
+                        </td>
+                        <td class="info-right">
+                            <h2>REPORT INFORMATION</h2>
+                            <table class="info-table">
+                                <tr>
+                                    <td>TOTAL QUANTITY</td>
+                                    <td>:</td>
+                                    <td>{{ number_format($transactions->sum('total_quantity_piece')) }}</td>
+                                </tr>
+                                <tr>
+                                    <td>SUPPLIER COUNT</td>
+                                    <td>:</td>
+                                    <td>{{ $transactions->groupBy(function($t){ return optional($t->supplier)->nama_supplier ?: 'N/A'; })->count() }}</td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                </table>
+                @php $isFirstPage = false; @endphp
+            @else
+                <!-- Header untuk halaman berikutnya -->
+                <div class="page-header" style="page-break-before: always;">
+                    <table class="header-table">
+                        <tr>
+                            <td>
+                                <div class="company-info">
+                                    <h1>PT Sultan Zahra Monajaya Sejahtera</h1>
+                                    <p>Jl. Raya Susukan No. 10, RT.1/RW.3, Susukan</p>
+                                    <p>Kecamatan Bojonggede, Kabupaten Bogor, Jawa Barat 16920</p>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="po-details">
+                                    <p><strong>Date</strong>    : {{ now()->format('d F Y') }}</p>
+                                    <p><strong>Report Type</strong> : Laporan Purchase Order</p>
+                                    <p><strong>Periode</strong>: {{ request('start_date') ? \Carbon\Carbon::parse(request('start_date'))->format('d M Y') : 'Semua' }} - {{ request('end_date') ? \Carbon\Carbon::parse(request('end_date'))->format('d M Y') : 'Semua' }}</p>
+                                    <p><strong>Dicetak pada: {{ now()->format('d F Y H:i:s') }}</strong></p>
+                                </div>
+                            </td>
+                        </tr>
+                    </table>
+                    <hr>
+                </div>
+            @endif
+            
+            <!-- Table per PO -->
+            <table class="item-table" style="margin-bottom: 30px;">
+                <thead>
+                    <tr>
+                        <th class="text-left">Item Description</th>
+                        <th>Order Qty (CTN)</th>
+                        <th>Order Qty (PC)</th>
+                        <th>Total SKU</th>
+                        <th>Unit Price</th>
+                        <th>Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($poGroup as $transaction)
+                        <tr>
+                            <td class="text-left">
+                                <strong>{{ $transaction->product->name ?? 'N/A' }}</strong><br>
+                                <small style="color: #666;">
+                                    <strong>Supplier:</strong> {{ optional($transaction->supplier)->nama_supplier ?? 'N/A' }}<br>
+                                    <strong>Sales:</strong> {{ optional($transaction->sales)->name ?? 'N/A' }}<br>
+                                    <strong>Toko:</strong> {{ $transaction->order_acc_by ?? 'N/A' }}<br>
+                                    <strong>Status:</strong> {{ ucfirst($transaction->approval_status ?? 'pending') }}
+                                </small>
+                            </td>
+                            <td>{{ $transaction->quantity_carton ?? '-' }}</td>
+                            <td>{{ $transaction->quantity_piece ?? '-' }}</td>
+                            <td>{{ $transaction->total_quantity_piece ?? '-' }}</td>
+                            <td>{{ number_format($transaction->unit_price ?? 0, 0, ',', '.') }}</td>
+                            <td>{{ number_format($transaction->total_amount ?? 0, 0, ',', '.') }}</td>
                         </tr>
                     @endforeach
-                @endforeach
+                    <!-- Total per PO -->
+                    <tr style="border-top: 2px solid #000; background-color: #f0f0f0;">
+                        <td colspan="5" class="text-left" style="font-weight: bold; padding: 8px;">
+                            TOTAL PO {{ $poNumber }}
+                        </td>
+                        <td style="font-weight: bold; font-size: 14px;">{{ number_format($poGroup->sum('total_amount'), 0, ',', '.') }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        @endforeach
+        
+        <!-- Grand Total -->
+        <table class="item-table" style="margin-top: 20px;">
+            <tbody>
+                <tr style="border-top: 3px solid #000; background-color: #e0e0e0;">
+                    <td colspan="5" class="text-left" style="font-weight: bold; font-size: 16px;">GRAND TOTAL SEMUA PO</td>
+                    <td style="font-weight: bold; font-size: 16px;">{{ number_format($transactions->sum('total_amount'), 0, ',', '.') }}</td>
+                </tr>
             </tbody>
         </table>
     @else
-        <div class="no-data">
+        <div style="text-align: center; padding: 40px; color: #64748b; font-style: italic;">
             <p>Tidak ada data PO yang ditemukan untuk periode yang dipilih.</p>
         </div>
     @endif
 
-    <!-- Status Breakdown -->
-    @if($summary['status_counts']->count() > 0)
-        <div class="page-break"></div>
-        <div class="summary">
-            <h3>Breakdown Status Approval</h3>
-            <div class="summary-grid">
-                @foreach($summary['status_counts'] as $status => $count)
-                    <div class="summary-item">
-                        <span class="summary-value">{{ $count }}</span>
-                        <div class="summary-label">{{ ucfirst($status) }}</div>
-                    </div>
-                @endforeach
-            </div>
-        </div>
-    @endif
-
-    <!-- Supplier Breakdown -->
-    @if($summary['supplier_counts']->count() > 0)
-        <div class="summary" style="margin-top: 20px;">
-            <h3>Breakdown per Supplier</h3>
-            <table class="table">
-                <thead>
-                    <tr>
-                        <th>Supplier</th>
-                        <th class="text-center">Jumlah Transaksi</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach($summary['supplier_counts'] as $supplier => $count)
-                        <tr>
-                            <td>{{ $supplier }}</td>
-                            <td class="text-center">{{ $count }}</td>
-                        </tr>
-                    @endforeach
-                </tbody>
-            </table>
-        </div>
-    @endif
-
-    <!-- Footer -->
-    <div class="footer">
-        <p>Dokumen ini dibuat secara otomatis oleh sistem {{ \App\Helpers\SettingsHelper::appName() }}</p>
-        <p>Dicetak pada: {{ now()->format('d F Y H:i:s') }} | Halaman: <span class="pagenum"></span></p>
-    </div>
 </body>
 </html>

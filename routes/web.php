@@ -48,6 +48,7 @@ Route::middleware(['mobile.only'])->group(function () {
         Route::get('/sales-transaction/po/{poNumber}/edit', [SalesTransactionController::class, 'editPO'])->name('sales-transaction.edit-po');
         Route::patch('/sales-transaction/po/{poNumber}', [SalesTransactionController::class, 'updatePO'])->name('sales-transaction.update-po');
         Route::delete('/sales-transaction/po/{poNumber}', [SalesTransactionController::class, 'deletePO'])->name('sales-transaction.delete-po');
+        Route::get('/sales-transaction/po/{poNumber}/export-pdf', [SalesTransactionController::class, 'exportPdf'])->name('sales-transaction.export-pdf');
         
         // Data Barang Routes
         Route::get('/data-barang/load-more', [DataBarangController::class, 'loadMore'])->name('data-barang.load-more');
