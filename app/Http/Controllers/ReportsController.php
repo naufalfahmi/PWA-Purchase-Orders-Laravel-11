@@ -361,12 +361,25 @@ class ReportsController extends Controller
             return optional($transaction->supplier)->nama_supplier ?: 'N/A';
         })->map->count();
 
+        // Monthly trends for PDF
+        $monthlyTrends = $transactions->groupBy(function ($transaction) {
+            return \Carbon\Carbon::parse($transaction->transaction_date)->format('M Y');
+        })->map(function ($group) {
+            return [
+                'count' => $group->count(),
+                'amount' => $group->sum('total_amount')
+            ];
+        })->sortBy(function ($data, $month) {
+            return \Carbon\Carbon::parse($month);
+        });
+
         return [
             'total_transactions' => $totalTransactions,
             'total_amount' => $totalAmount,
             'total_quantity' => $totalQuantity,
             'status_counts' => $statusCounts,
             'supplier_counts' => $supplierCounts,
+            'monthly_trends' => $monthlyTrends,
         ];
     }
 

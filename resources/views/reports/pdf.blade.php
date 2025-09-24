@@ -310,6 +310,111 @@
                 </tr>
             </tbody>
         </table>
+
+        <!-- Status Breakdown -->
+        @if(isset($summary['status_counts']) && $summary['status_counts']->count() > 0)
+            <div style="page-break-before: always; margin-top: 30px;">
+                <div class="page-header">
+                    <table class="header-table">
+                        <tr>
+                            <td>
+                                <div class="company-info">
+                                    <h1>PT Sultan Zahra Monajaya Sejahtera</h1>
+                                    <p>Jl. Raya Susukan No. 10, RT.1/RW.3, Susukan</p>
+                                    <p>Kecamatan Bojonggede, Kabupaten Bogor, Jawa Barat 16920</p>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="po-details">
+                                    <p><strong>Date</strong>    : {{ now()->format('d F Y') }}</p>
+                                    <p><strong>Report Type</strong> : Laporan Purchase Order</p>
+                                    <p><strong>Periode</strong>: {{ request('start_date') ? \Carbon\Carbon::parse(request('start_date'))->format('d M Y') : 'Semua' }} - {{ request('end_date') ? \Carbon\Carbon::parse(request('end_date'))->format('d M Y') : 'Semua' }}</p>
+                                    <p><strong>Dicetak pada: {{ now()->format('d F Y H:i:s') }}</strong></p>
+                                </div>
+                            </td>
+                        </tr>
+                    </table>
+                    <hr>
+                </div>
+                
+                <h2 style="text-align: center; margin: 20px 0; text-decoration: underline;">DISTRIBUSI STATUS PO</h2>
+                <table class="item-table">
+                    <thead>
+                        <tr>
+                            <th class="text-left">Status</th>
+                            <th>Jumlah</th>
+                            <th>Persentase</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @php $totalStatus = $summary['status_counts']->sum(); @endphp
+                        @foreach($summary['status_counts'] as $status => $count)
+                        <tr>
+                            <td class="text-left">{{ ucfirst($status) }}</td>
+                            <td class="text-center">{{ $count }}</td>
+                            <td class="text-center">{{ $totalStatus > 0 ? number_format(($count / $totalStatus) * 100, 1) : 0 }}%</td>
+                        </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        @endif
+
+        <!-- Top 5 Supplier -->
+        @if(isset($summary['supplier_counts']) && $summary['supplier_counts']->count() > 0)
+            <div style="margin-top: 30px;">
+                <h2 style="text-align: center; margin: 20px 0; text-decoration: underline;">TOP 5 SUPPLIER</h2>
+                <table class="item-table">
+                    <thead>
+                        <tr>
+                            <th class="text-left">Supplier</th>
+                            <th>Jumlah Transaksi</th>
+                            <th>Total Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @php 
+                            $supplierAmounts = $transactions->groupBy(function($t){ return optional($t->supplier)->nama_supplier ?: 'N/A'; })
+                                ->map(function($group) { return $group->sum('total_amount'); })
+                                ->sortDesc()
+                                ->take(5);
+                        @endphp
+                        @foreach($supplierAmounts as $supplier => $amount)
+                        <tr>
+                            <td class="text-left">{{ $supplier }}</td>
+                            <td class="text-center">{{ $summary['supplier_counts'][$supplier] ?? 0 }}</td>
+                            <td class="text-right">Rp {{ number_format($amount, 0, ',', '.') }}</td>
+                        </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        @endif
+
+        <!-- Trend Bulanan -->
+        @if(isset($summary['monthly_trends']) && $summary['monthly_trends']->count() > 0)
+            <div style="margin-top: 30px;">
+                <h2 style="text-align: center; margin: 20px 0; text-decoration: underline;">TREND BULANAN</h2>
+                <table class="item-table">
+                    <thead>
+                        <tr>
+                            <th class="text-left">Bulan</th>
+                            <th>Jumlah Transaksi</th>
+                            <th>Total Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($summary['monthly_trends'] as $month => $data)
+                        <tr>
+                            <td class="text-left">{{ $month }}</td>
+                            <td class="text-center">{{ $data['count'] }}</td>
+                            <td class="text-right">Rp {{ number_format($data['amount'], 0, ',', '.') }}</td>
+                        </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        @endif
     @else
         <div style="text-align: center; padding: 40px; color: #64748b; font-style: italic;">
             <p>Tidak ada data PO yang ditemukan untuk periode yang dipilih.</p>
