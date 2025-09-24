@@ -32,6 +32,8 @@ class SalesTransaction extends Model
         'approved_by',
         'approved_at',
         'approval_notes',
+        'received_by',
+        'received_at',
     ];
 
     protected $casts = [
@@ -43,6 +45,7 @@ class SalesTransaction extends Model
         'unit_price' => 'decimal:2',
         'total_amount' => 'decimal:2',
         'approved_at' => 'datetime',
+        'received_at' => 'datetime',
     ];
 
     public function product()
@@ -63,6 +66,11 @@ class SalesTransaction extends Model
     public function approver()
     {
         return $this->belongsTo(User::class, 'approved_by');
+    }
+
+    public function receiver()
+    {
+        return $this->belongsTo(User::class, 'received_by');
     }
 
     // Method untuk menghitung total quantity piece
@@ -99,6 +107,15 @@ class SalesTransaction extends Model
         ]);
     }
 
+    // Method untuk mark as received
+    public function markAsReceived($userId)
+    {
+        $this->update([
+            'received_by' => $userId,
+            'received_at' => now(),
+        ]);
+    }
+
     // Method untuk check status
     public function isPending()
     {
@@ -115,8 +132,21 @@ class SalesTransaction extends Model
         return $this->approval_status === 'rejected';
     }
 
+    public function isReceived()
+    {
+        return !is_null($this->received_at);
+    }
+
     public function getStatusBadgeAttribute()
     {
+        // Check if received first
+        if ($this->isReceived()) {
+            return [
+                'class' => 'bg-purple-100 text-purple-800',
+                'label' => 'Received'
+            ];
+        }
+
         $statuses = [
             'pending' => 'bg-yellow-100 text-yellow-800',
             'approved' => 'bg-green-100 text-green-800',

@@ -408,11 +408,11 @@
                 </a>
                 @endif
                 
-                <a href="{{ route('data-barang.index') }}" class="mobile-nav-item {{ request()->routeIs('data-barang.*') ? 'active' : '' }}">
+                <a href="{{ route('return.coming-soon') }}" class="mobile-nav-item {{ request()->routeIs('return.*') ? 'active' : '' }}">
                     <svg class="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 15v-1a4 4 0 00-4-4H8m0 0l3 3m-3-3l3-3m5 14v-5a2 2 0 00-2-2H6a2 2 0 00-2 2v5a2 2 0 002 2h12a2 2 0 002-2z"></path>
                     </svg>
-                    <span>Barang</span>
+                    <span>Return</span>
                 </a>
                 
                 <a href="{{ route('profile') }}" class="mobile-nav-item {{ request()->routeIs('profile*') ? 'active' : '' }}">

@@ -50,30 +50,36 @@
                         {{ $transactions->first()->status_badge['label'] }}
                     </span>
                 </div>
+                <div class="flex justify-between text-sm">
+                    <span class="text-gray-600">Supplier:</span>
+                    <span class="font-medium">{{ $transactions->first()->product->supplier->nama_supplier ?? 'N/A' }}</span>
+                </div>
                 <div class="border-t border-dotted border-gray-400 my-4"></div>
                 <div class="space-y-2">
                     @foreach($transactions as $transaction)
                         <div class="flex justify-between text-sm">
                             <span class="text-gray-700">{{ $transaction->product->name ?? 'Produk tidak ditemukan' }}</span>
                             <span class="font-medium">
-                                @if(($transaction->quantity_carton ?? 0) > 0)
-                                    {{ $transaction->quantity_carton }} CTN
-                                @else
-                                    {{ $transaction->quantity_piece }} PCS
-                                @endif
+                                @php
+                                    $displayQty = '';
+                                    if (($transaction->quantity_carton ?? 0) > 0) {
+                                        $displayQty .= $transaction->quantity_carton . ' CTN';
+                                    }
+                                    if (($transaction->quantity_piece ?? 0) > 0) {
+                                        if ($displayQty) $displayQty .= ' + ';
+                                        $displayQty .= $transaction->quantity_piece . ' PCS';
+                                    }
+                                @endphp
+                                {{ $displayQty }}
                             </span>
                         </div>
                         <div class="flex justify-between text-xs text-gray-500 mb-1">
-                            <span>Supplier: {{ $transaction->product->supplier->nama_supplier ?? 'N/A' }}</span>
+                            <span>{{ number_format($transaction->total_quantity_piece, 0, ',', '.') }} pcs total</span>
                             <span>@ Rp {{ number_format($transaction->unit_price, 0, ',', '.') }}</span>
                         </div>
                         <div class="flex justify-between text-sm font-medium mb-2">
                             <span>Subtotal:</span>
-                            @php
-                                $rawQty = ($transaction->quantity_carton ?? 0) > 0 ? (int)$transaction->quantity_carton : (int)$transaction->quantity_piece;
-                                $rawSubtotal = $rawQty * (float)$transaction->unit_price;
-                            @endphp
-                            <span>Rp {{ number_format($rawSubtotal, 0, ',', '.') }}</span>
+                            <span>Rp {{ number_format($transaction->total_amount, 0, ',', '.') }}</span>
                         </div>
                         <div class="border-t border-dotted border-gray-300 mb-2"></div>
                     @endforeach
@@ -86,7 +92,7 @@
                     </div>
                     <div class="flex justify-between text-sm mb-2">
                         <span class="text-gray-600">Total Quantity:</span>
-                        <span class="font-medium">{{ number_format($totalQuantity, 0, ',', '.') }} units</span>
+                        <span class="font-medium">{{ number_format($totalQuantity, 0, ',', '.') }} pcs</span>
                     </div>
                     <div class="flex justify-between items-center">
                         <span class="text-sm font-bold text-gray-900">TOTAL AMOUNT:</span>
@@ -315,14 +321,20 @@
         message += '*DETAIL PRODUK:*\n';
         @foreach($transactions as $transaction)
             @php
-                $rawQty = ($transaction->quantity_carton ?? 0) > 0 ? (int)$transaction->quantity_carton : (int)$transaction->quantity_piece;
-                $qtyType = ($transaction->quantity_carton ?? 0) > 0 ? 'CTN' : 'PCS';
-                $rawSubtotal = $rawQty * (float)$transaction->unit_price;
+                $displayQty = '';
+                if (($transaction->quantity_carton ?? 0) > 0) {
+                    $displayQty .= $transaction->quantity_carton . ' CTN';
+                }
+                if (($transaction->quantity_piece ?? 0) > 0) {
+                    if ($displayQty) $displayQty .= ' + ';
+                    $displayQty .= $transaction->quantity_piece . ' PCS';
+                }
+                $displayQty .= ' (' . number_format($transaction->total_quantity_piece, 0, ',', '.') . ' pcs total)';
             @endphp
             message += '• {{ $transaction->product->name ?? "N/A" }}\n';
-            message += '  Qty: {{ $rawQty }} {{ $qtyType }}\n';
+            message += '  Qty: {{ $displayQty }}\n';
             message += '  Harga: Rp {{ number_format($transaction->unit_price, 0, ",", ".") }}\n';
-            message += '  Subtotal: Rp {{ number_format($rawSubtotal, 0, ",", ".") }}\n\n';
+            message += '  Subtotal: Rp {{ number_format($transaction->total_amount, 0, ",", ".") }}\n\n';
         @endforeach
         
         message += 'TOTAL: *Rp ' + amount + '*\n';
@@ -649,14 +661,20 @@
         message += '*DETAIL PRODUK:*\n';
         @foreach($transactions as $transaction)
             @php
-                $rawQty = ($transaction->quantity_carton ?? 0) > 0 ? (int)$transaction->quantity_carton : (int)$transaction->quantity_piece;
-                $qtyType = ($transaction->quantity_carton ?? 0) > 0 ? 'CTN' : 'PCS';
-                $rawSubtotal = $rawQty * (float)$transaction->unit_price;
+                $displayQty = '';
+                if (($transaction->quantity_carton ?? 0) > 0) {
+                    $displayQty .= $transaction->quantity_carton . ' CTN';
+                }
+                if (($transaction->quantity_piece ?? 0) > 0) {
+                    if ($displayQty) $displayQty .= ' + ';
+                    $displayQty .= $transaction->quantity_piece . ' PCS';
+                }
+                $displayQty .= ' (' . number_format($transaction->total_quantity_piece, 0, ',', '.') . ' pcs total)';
             @endphp
             message += '• {{ $transaction->product->name ?? "N/A" }}\n';
-            message += '  Qty: {{ $rawQty }} {{ $qtyType }}\n';
+            message += '  Qty: {{ $displayQty }}\n';
             message += '  Harga: Rp {{ number_format($transaction->unit_price, 0, ",", ".") }}\n';
-            message += '  Subtotal: Rp {{ number_format($rawSubtotal, 0, ",", ".") }}\n\n';
+            message += '  Subtotal: Rp {{ number_format($transaction->total_amount, 0, ",", ".") }}\n\n';
         @endforeach
         
         message += 'TOTAL: *Rp ' + amount + '*\n';

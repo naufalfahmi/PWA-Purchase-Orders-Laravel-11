@@ -39,13 +39,15 @@ class SalesTransactionController extends Controller
             \DB::raw('MAX(approval_notes) as approval_notes'),
             \DB::raw('MAX(general_notes) as general_notes'),
             \DB::raw('MAX(order_acc_by) as order_acc_by'),
+            \DB::raw('MAX(received_by) as received_by'),
+            \DB::raw('MAX(received_at) as received_at'),
             \DB::raw('COUNT(*) as total_items'),
-            \DB::raw('SUM(CASE WHEN quantity_carton > 0 THEN quantity_carton ELSE quantity_piece END) as total_quantity'),
-            \DB::raw('SUM(CASE WHEN quantity_carton > 0 THEN quantity_carton * unit_price ELSE quantity_piece * unit_price END) as total_amount'),
+            \DB::raw('SUM(total_quantity_piece) as total_quantity'),
+            \DB::raw('SUM(total_amount) as total_amount'),
             \DB::raw('MIN(created_at) as created_at'),
             \DB::raw('MAX(updated_at) as updated_at')
         ])
-        ->with(['sales', 'approver'])
+        ->with(['sales', 'approver', 'receiver'])
         ->groupBy('po_number')
         ->orderBy(\DB::raw('MIN(created_at)'), 'desc');
         
@@ -83,7 +85,11 @@ class SalesTransactionController extends Controller
 
         // Filter berdasarkan approval status
         if ($request->filled('approval_status')) {
-            $query->where('approval_status', $request->approval_status);
+            if ($request->approval_status === 'received') {
+                $query->whereNotNull('received_at');
+            } else {
+                $query->where('approval_status', $request->approval_status);
+            }
         }
 
         // Filter berdasarkan search (PO Number, Transaction Number, Sales)
@@ -227,7 +233,6 @@ class SalesTransactionController extends Controller
             'products.*.product_id' => 'required|exists:products,id',
             'products.*.quantity_carton' => 'nullable|integer|min:0',
             'products.*.quantity_piece' => 'nullable|integer|min:0',
-            'products.*.quantity_type' => 'required|in:carton,piece',
             'products.*.unit_price' => 'required|numeric|min:0',
             'products.*.notes' => 'nullable|string',
         ]);
@@ -243,8 +248,9 @@ class SalesTransactionController extends Controller
         // Validate that at least one product has quantity > 0
         $hasValidProduct = false;
         foreach ($validated['products'] as $product) {
-            if (($product['quantity_type'] === 'carton' && $product['quantity_carton'] > 0) || 
-                ($product['quantity_type'] === 'piece' && $product['quantity_piece'] > 0)) {
+            $cartonQty = $product['quantity_carton'] ?? 0;
+            $pieceQty = $product['quantity_piece'] ?? 0;
+            if ($cartonQty > 0 || $pieceQty > 0) {
                 $hasValidProduct = true;
                 break;
             }
@@ -259,15 +265,16 @@ class SalesTransactionController extends Controller
         $transactionNumber = $this->generateTransactionNumber();
 
         foreach ($validated['products'] as $productData) {
-            // Skip if no quantity based on quantity type
-            if (($productData['quantity_type'] === 'carton' && $productData['quantity_carton'] == 0) || 
-                ($productData['quantity_type'] === 'piece' && $productData['quantity_piece'] == 0)) {
+            // Skip if no quantity
+            $cartonQty = $productData['quantity_carton'] ?? 0;
+            $pieceQty = $productData['quantity_piece'] ?? 0;
+            if ($cartonQty == 0 && $pieceQty == 0) {
                 continue;
             }
 
             $product = Product::find($productData['product_id']);
-            $quantityCarton = $productData['quantity_type'] === 'carton' ? $productData['quantity_carton'] : 0;
-            $quantityPiece = $productData['quantity_type'] === 'piece' ? $productData['quantity_piece'] : 0;
+            $quantityCarton = $cartonQty;
+            $quantityPiece = $pieceQty;
             $totalQuantityPiece = ($quantityCarton * $product->quantity_per_carton) + $quantityPiece;
             $totalAmount = $totalQuantityPiece * $productData['unit_price'];
 
@@ -314,19 +321,9 @@ class SalesTransactionController extends Controller
             return redirect()->route('sales-transaction.index')->with('error', 'Transaksi tidak ditemukan.');
         }
 
-        // Hitung total berbasis input mentah (tanpa konversi CTN -> PCS)
-        $totalQuantity = $transactions->sum(function ($t) {
-            return ($t->quantity_carton && $t->quantity_carton > 0)
-                ? (int) $t->quantity_carton
-                : (int) $t->quantity_piece;
-        });
-
-        $totalAmount = $transactions->sum(function ($t) {
-            $rawQty = ($t->quantity_carton && $t->quantity_carton > 0)
-                ? (int) $t->quantity_carton
-                : (int) $t->quantity_piece;
-            return $rawQty * (float) $t->unit_price;
-        });
+        // Hitung total menggunakan total_quantity_piece yang sudah dikonversi dengan benar
+        $totalQuantity = $transactions->sum('total_quantity_piece');
+        $totalAmount = $transactions->sum('total_amount');
 
         return view('sales-transaction.show', compact('transactions', 'transactionNumber', 'totalAmount', 'totalQuantity'));
     }
@@ -395,6 +392,41 @@ class SalesTransactionController extends Controller
         }
 
         return back()->with('success', 'Purchase Order ' . $poNumber . ' berhasil ditolak.');
+    }
+
+    /**
+     * Mark all transactions in a PO as received (Sales only)
+     */
+    public function receivePO(Request $request, $poNumber)
+    {
+        // Check if user is sales
+        if (!auth()->user()->isSales()) {
+            return back()->with('error', 'Hanya sales yang dapat menandai PO sebagai received.');
+        }
+
+        // Check if PO belongs to the sales
+        $currentSales = Sales::where('name', auth()->user()->name)->first();
+        if (!$currentSales) {
+            return back()->with('error', 'Sales tidak ditemukan.');
+        }
+
+        $transactions = SalesTransaction::where('po_number', $poNumber)
+            ->where('sales_id', $currentSales->id)
+            ->where('approval_status', 'approved')
+            ->get();
+
+        if ($transactions->isEmpty()) {
+            return back()->with('error', 'PO tidak ditemukan atau belum disetujui.');
+        }
+        
+        foreach ($transactions as $transaction) {
+            $transaction->markAsReceived(auth()->id());
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Purchase Order ' . $poNumber . ' berhasil ditandai sebagai received.'
+        ]);
     }
 
     /**
@@ -498,7 +530,6 @@ class SalesTransactionController extends Controller
             'products.*.product_id' => 'required|exists:products,id',
             'products.*.quantity_carton' => 'nullable|integer|min:0',
             'products.*.quantity_piece' => 'nullable|integer|min:0',
-            'products.*.quantity_type' => 'required|in:carton,piece',
             'products.*.unit_price' => 'required|numeric|min:0',
             'products.*.notes' => 'nullable|string',
         ]);
@@ -512,14 +543,16 @@ class SalesTransactionController extends Controller
         $transactions = [];
 
         foreach ($validated['products'] as $productData) {
-            if (($productData['quantity_type'] === 'carton' && ($productData['quantity_carton'] ?? 0) == 0) || 
-                ($productData['quantity_type'] === 'piece' && ($productData['quantity_piece'] ?? 0) == 0)) {
+            // Skip if no quantity
+            $cartonQty = $productData['quantity_carton'] ?? 0;
+            $pieceQty = $productData['quantity_piece'] ?? 0;
+            if ($cartonQty == 0 && $pieceQty == 0) {
                 continue;
             }
 
             $product = Product::find($productData['product_id']);
-            $quantityCarton = $productData['quantity_type'] === 'carton' ? ($productData['quantity_carton'] ?? 0) : 0;
-            $quantityPiece = $productData['quantity_type'] === 'piece' ? ($productData['quantity_piece'] ?? 0) : 0;
+            $quantityCarton = $cartonQty;
+            $quantityPiece = $pieceQty;
             $totalQuantityPiece = ($quantityCarton * $product->quantity_per_carton) + $quantityPiece;
             $totalAmount = $totalQuantityPiece * $productData['unit_price'];
 
@@ -576,8 +609,8 @@ class SalesTransactionController extends Controller
             \DB::raw('MAX(general_notes) as general_notes'),
             \DB::raw('MAX(order_acc_by) as order_acc_by'),
             \DB::raw('COUNT(*) as total_items'),
-            \DB::raw('SUM(CASE WHEN quantity_carton > 0 THEN quantity_carton ELSE quantity_piece END) as total_quantity'),
-            \DB::raw('SUM(CASE WHEN quantity_carton > 0 THEN quantity_carton * unit_price ELSE quantity_piece * unit_price END) as total_amount'),
+            \DB::raw('SUM(total_quantity_piece) as total_quantity'),
+            \DB::raw('SUM(total_amount) as total_amount'),
             \DB::raw('MIN(created_at) as created_at'),
             \DB::raw('MAX(updated_at) as updated_at')
         ])

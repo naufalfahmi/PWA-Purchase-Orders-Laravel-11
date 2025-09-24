@@ -167,6 +167,18 @@
                 </div>
                 
                 <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Sales</label>
+                    <select name="sales_id" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="">Semua Sales</option>
+                        @foreach($salesList as $sales)
+                            <option value="{{ $sales->id }}" {{ request('sales_id') == $sales->id ? 'selected' : '' }}>
+                                {{ $sales->name }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+                
+                <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Status Approval</label>
                     <select name="approval_status" id="statusSelect" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
                         <option value="">Semua Status</option>
@@ -230,7 +242,7 @@
                     </svg>
                 </div>
                 <p class="text-xs font-medium text-gray-600">Total Quantity</p>
-                <p class="text-lg font-semibold text-gray-900">{{ number_format($summary['total_quantity']) }}</p>
+                <p class="text-lg font-semibold text-gray-900">{{ number_format($summary['total_quantity'] ?? 0) }}</p>
             </div>
         </div>
         
@@ -250,7 +262,7 @@
     <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
         <h3 class="text-lg font-medium text-gray-900 mb-4">Download Laporan</h3>
         
-        @if(request()->hasAny(['start_date', 'end_date', 'delivery_start_date', 'delivery_end_date', 'supplier_id', 'approval_status', 'po_number']))
+        @if(request()->hasAny(['start_date', 'end_date', 'delivery_start_date', 'delivery_end_date', 'supplier_id', 'sales_id', 'approval_status', 'po_number']))
         <div class="mb-3 p-2 bg-blue-50 border border-blue-200 rounded text-xs text-blue-800">
             <p class="font-medium">Filter Aktif:</p>
             @if(request('start_date') || request('end_date'))
@@ -261,6 +273,9 @@
                 @endif
                 @if(request('supplier_id'))
                 <p>• Supplier: {{ $suppliers->where('id', request('supplier_id'))->first()->nama_supplier ?? 'Tidak ditemukan' }}</p>
+                @endif
+                @if(request('sales_id'))
+                <p>• Sales: {{ $salesList->where('id', request('sales_id'))->first()->name ?? 'Tidak ditemukan' }}</p>
                 @endif
                 @if(request('approval_status'))
                 <p>• Status: {{ ucfirst(request('approval_status')) }}</p>
@@ -408,6 +423,12 @@ document.addEventListener('DOMContentLoaded', function() {
         topCategoriesData: @json($topCategoriesData)
     };
     
+    // Debug: Log chart data to console
+    console.log('Chart Data:', chartData);
+    console.log('Summary Data:', @json($summary));
+    console.log('Top Products Data:', chartData.topProductsData);
+    console.log('Top Categories Data:', chartData.topCategoriesData);
+    
 
     // Store chart instances
     let statusChart = null;
@@ -440,15 +461,28 @@ document.addEventListener('DOMContentLoaded', function() {
             
             
             if (statusCanvas && supplierCanvas && trendCanvas) {
+                console.log('Initializing all charts...');
                 initStatusChart();
                 initSupplierChart();
                 initTrendChart();
                 
                 // Initialize new charts if canvas elements exist
-                if (salesAmountCanvas) initSalesAmountChart();
-                if (monthlyAmountCanvas) initMonthlyAmountChart();
-                if (topProductsCanvas) initTopProductsChart();
-                if (topCategoriesCanvas) initTopCategoriesChart();
+                if (salesAmountCanvas) {
+                    console.log('Initializing sales amount chart...');
+                    initSalesAmountChart();
+                }
+                if (monthlyAmountCanvas) {
+                    console.log('Initializing monthly amount chart...');
+                    initMonthlyAmountChart();
+                }
+                if (topProductsCanvas) {
+                    console.log('Initializing top products chart...');
+                    initTopProductsChart();
+                }
+                if (topCategoriesCanvas) {
+                    console.log('Initializing top categories chart...');
+                    initTopCategoriesChart();
+                }
                 
                 chartsInitialized = true;
             } else {
@@ -779,6 +813,15 @@ document.addEventListener('DOMContentLoaded', function() {
         try {
             const ctx = document.getElementById('topProductsChart');
             if (!ctx) {
+                console.error('topProductsChart canvas not found');
+                return;
+            }
+            
+            console.log('Top Products Data:', chartData.topProductsData);
+            
+            if (!chartData.topProductsData || !chartData.topProductsData.labels || chartData.topProductsData.labels.length === 0) {
+                console.warn('No top products data available');
+                ctx.parentElement.innerHTML = '<div class="flex items-center justify-center h-64 text-gray-500">Tidak ada data produk</div>';
                 return;
             }
             
@@ -826,6 +869,15 @@ document.addEventListener('DOMContentLoaded', function() {
         try {
             const ctx = document.getElementById('topCategoriesChart');
             if (!ctx) {
+                console.error('topCategoriesChart canvas not found');
+                return;
+            }
+            
+            console.log('Top Categories Data:', chartData.topCategoriesData);
+            
+            if (!chartData.topCategoriesData || !chartData.topCategoriesData.labels || chartData.topCategoriesData.labels.length === 0) {
+                console.warn('No top categories data available');
+                ctx.parentElement.innerHTML = '<div class="flex items-center justify-center h-64 text-gray-500">Tidak ada data kategori</div>';
                 return;
             }
             

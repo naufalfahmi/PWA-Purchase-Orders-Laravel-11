@@ -40,13 +40,15 @@ class ReportsController extends Controller
             \DB::raw('MAX(approval_notes) as approval_notes'),
             \DB::raw('MAX(general_notes) as general_notes'),
             \DB::raw('MAX(order_acc_by) as order_acc_by'),
+            \DB::raw('MAX(received_by) as received_by'),
+            \DB::raw('MAX(received_at) as received_at'),
             \DB::raw('COUNT(*) as total_items'),
-            \DB::raw('SUM(CASE WHEN quantity_carton > 0 THEN quantity_carton ELSE quantity_piece END) as total_quantity'),
-            \DB::raw('SUM(CASE WHEN quantity_carton > 0 THEN quantity_carton * unit_price ELSE quantity_piece * unit_price END) as total_amount'),
+            \DB::raw('SUM(total_quantity_piece) as total_quantity'),
+            \DB::raw('SUM(total_amount) as total_amount'),
             \DB::raw('MIN(created_at) as created_at'),
             \DB::raw('MAX(updated_at) as updated_at')
         ])
-        ->with(['sales', 'approver', 'supplier'])
+        ->with(['sales', 'approver', 'supplier', 'receiver'])
         ->groupBy('po_number');
 
         // Filter by transaction date range (pre-group filter)
@@ -70,9 +72,18 @@ class ReportsController extends Controller
             $query->where('supplier_id', $request->supplier_id);
         }
 
+        // Filter by sales (pre-group filter)
+        if ($request->filled('sales_id')) {
+            $query->where('sales_id', $request->sales_id);
+        }
+
         // Filter by approval status (pre-group filter)
         if ($request->filled('approval_status')) {
-            $query->where('approval_status', $request->approval_status);
+            if ($request->approval_status === 'received') {
+                $query->whereNotNull('received_at');
+            } else {
+                $query->where('approval_status', $request->approval_status);
+            }
         }
 
         // Filter by PO number
@@ -84,10 +95,12 @@ class ReportsController extends Controller
 
         // Get filter options
         $suppliers = Supplier::orderBy('nama_supplier')->get();
+        $salesList = Sales::orderBy('name')->get();
         $approvalStatuses = [
             'pending' => 'Pending',
             'approved' => 'Approved',
-            'rejected' => 'Rejected'
+            'rejected' => 'Rejected',
+            'received' => 'Received'
         ];
 
         // Calculate summary statistics using grouped-by-PO
@@ -117,7 +130,14 @@ class ReportsController extends Controller
             $detailedQuery->where('supplier_id', $request->supplier_id);
         }
         if ($request->filled('approval_status')) {
-            $detailedQuery->where('approval_status', $request->approval_status);
+            if ($request->approval_status === 'received') {
+                $detailedQuery->whereNotNull('received_at');
+            } else {
+                $detailedQuery->where('approval_status', $request->approval_status);
+            }
+        }
+        if ($request->filled('sales_id')) {
+            $detailedQuery->where('sales_id', $request->sales_id);
         }
         if ($request->filled('po_number')) {
             $detailedQuery->where('po_number', 'like', '%' . $request->po_number . '%');
@@ -131,6 +151,7 @@ class ReportsController extends Controller
         return view('reports.index', compact(
             'transactions',
             'suppliers',
+            'salesList',
             'approvalStatuses',
             'summary',
             'monthlyData',
@@ -180,8 +201,15 @@ class ReportsController extends Controller
             if ($request->filled('supplier_id')) {
                 $query->where('supplier_id', $request->supplier_id);
             }
+            if ($request->filled('sales_id')) {
+                $query->where('sales_id', $request->sales_id);
+            }
             if ($request->filled('approval_status')) {
-                $query->where('approval_status', $request->approval_status);
+                if ($request->approval_status === 'received') {
+                    $query->whereNotNull('received_at');
+                } else {
+                    $query->where('approval_status', $request->approval_status);
+                }
             }
             if ($request->filled('po_number')) {
                 $query->where('po_number', 'like', '%' . $request->po_number . '%');
@@ -245,8 +273,15 @@ class ReportsController extends Controller
             if ($request->filled('supplier_id')) {
                 $query->where('supplier_id', $request->supplier_id);
             }
+            if ($request->filled('sales_id')) {
+                $query->where('sales_id', $request->sales_id);
+            }
             if ($request->filled('approval_status')) {
-                $query->where('approval_status', $request->approval_status);
+                if ($request->approval_status === 'received') {
+                    $query->whereNotNull('received_at');
+                } else {
+                    $query->where('approval_status', $request->approval_status);
+                }
             }
             if ($request->filled('po_number')) {
                 $query->where('po_number', 'like', '%' . $request->po_number . '%');
@@ -302,33 +337,28 @@ class ReportsController extends Controller
      */
     private function calculateSummary($transactions)
     {
-        // Group by unique PO number to avoid double-counting per PO
-        $groupedByPO = $transactions->groupBy('po_number');
-
+        // Data is already grouped by PO number in the query, so no need to group again
         // Total transaksi should be by number PO (unique PO count)
-        $totalTransactions = $groupedByPO->count();
+        $totalTransactions = $transactions->count();
 
-        // Aggregate totals across unique POs
-        $totalAmount = $groupedByPO->map(function ($poGroup) {
-            return $poGroup->sum('total_amount');
-        })->sum();
+        // Sum totals directly from grouped data
+        $totalAmount = $transactions->sum('total_amount');
+        $totalQuantity = $transactions->sum('total_quantity');
 
-        $totalQuantity = $groupedByPO->map(function ($poGroup) {
-            return $poGroup->sum('total_quantity_piece');
-        })->sum();
-
-        // Status counts by PO: use the most frequent status within the PO
-        $statusCounts = $groupedByPO->map(function ($poGroup) {
-            return $poGroup->groupBy('approval_status')->map->count()->sortDesc()->keys()->first();
+        // Status counts: check received first, then use approval_status
+        $statusCounts = $transactions->map(function ($transaction) {
+            // Check if received
+            if ($transaction->received_at) {
+                return 'received';
+            }
+            return $transaction->approval_status;
         })->groupBy(function ($status) {
             return $status;
         })->map->count();
 
         // Supplier counts by PO (count unique POs per supplier)
-        $supplierCounts = $groupedByPO->map(function ($poGroup) {
-            return optional($poGroup->first()->supplier)->nama_supplier ?: 'N/A';
-        })->groupBy(function ($supplierName) {
-            return $supplierName;
+        $supplierCounts = $transactions->groupBy(function ($transaction) {
+            return optional($transaction->supplier)->nama_supplier ?: 'N/A';
         })->map->count();
 
         return [

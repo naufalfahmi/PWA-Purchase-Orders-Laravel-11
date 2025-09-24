@@ -49,6 +49,8 @@ class POReportExport implements FromCollection, WithHeadings, WithMapping, WithS
                 'Diapprove Oleh',
                 'Tanggal Approval',
                 'Catatan Approval',
+                'Diterima Oleh',
+                'Tanggal Diterima',
                 'Catatan Umum',
                 'Tanggal Pengiriman'
             ];
@@ -95,10 +97,12 @@ class POReportExport implements FromCollection, WithHeadings, WithMapping, WithS
                 (int) ($transaction->total_items ?? 0),
                 (int) ($transaction->total_quantity ?? 0),
                 (float) ($transaction->total_amount ?? 0),
-                $this->getStatusLabel($transaction->approval_status),
+                $this->getStatusLabel($transaction->approval_status, $transaction->received_at, optional($transaction->receiver)->name),
                 optional($transaction->approver)->name ?? '-',
                 $transaction->approved_at ? \Carbon\Carbon::parse($transaction->approved_at)->format('d/m/Y H:i') : '-',
                 $transaction->approval_notes ?? '-',
+                optional($transaction->receiver)->name ?? '-',
+                $transaction->received_at ? \Carbon\Carbon::parse($transaction->received_at)->format('d/m/Y H:i:s') : '-',
                 $transaction->general_notes ?? '-',
                 $transaction->delivery_date ? \Carbon\Carbon::parse($transaction->delivery_date)->format('d/m/Y') : '-',
             ];
@@ -114,8 +118,8 @@ class POReportExport implements FromCollection, WithHeadings, WithMapping, WithS
             $transaction->quantity_carton ?? 0,
             $transaction->quantity_piece ?? 0,
             (float) ($transaction->unit_price ?? 0),
-            (float) ((((($transaction->quantity_carton ?? 0) > 0) ? ($transaction->quantity_carton ?? 0) : ($transaction->quantity_piece ?? 0)) * ($transaction->unit_price ?? 0))),
-            $isNewPo ? $this->getStatusLabel($transaction->approval_status) : '',
+            (float) ($transaction->total_amount ?? 0),
+            $isNewPo ? $this->getStatusLabel($transaction->approval_status, $transaction->received_at, optional($transaction->receiver)->name) : '',
             $isNewPo ? ($transaction->approver->name ?? '-') : '',
             $isNewPo ? ($transaction->approved_at ? $transaction->approved_at->format('d/m/Y H:i') : '-') : '',
             $isNewPo ? ($transaction->approval_notes ?? '-') : '',
@@ -322,12 +326,8 @@ class POReportExport implements FromCollection, WithHeadings, WithMapping, WithS
                 // Add total row
                 $totalRow = $lastRow + 2;
                 $sheet->setCellValue('A' . $totalRow, 'TOTAL KESELURUHAN');
-                // Compute total using (quantity_carton > 0 ? quantity_carton : quantity_piece) * unit_price
-                $computedTotal = $this->transactions->reduce(function($carry, $t) {
-                    $qty = ($t->quantity_carton ?? 0) > 0 ? ($t->quantity_carton ?? 0) : ($t->quantity_piece ?? 0);
-                    $unit = $t->unit_price ?? 0;
-                    return $carry + ($qty * $unit);
-                }, 0);
+                // Compute total using total_amount from database
+                $computedTotal = $this->transactions->sum('total_amount');
                 // Total amount column differs between grouped and detailed
                 if ($this->groupedByPO) {
                     $sheet->setCellValue('H' . $totalRow, $computedTotal);
@@ -400,8 +400,15 @@ class POReportExport implements FromCollection, WithHeadings, WithMapping, WithS
         ];
     }
 
-    private function getStatusLabel($status)
+    private function getStatusLabel($status, $receivedAt = null, $receiverName = null)
     {
+        // Check if received first
+        if ($receivedAt) {
+            $formattedDate = \Carbon\Carbon::parse($receivedAt)->format('d/m/Y H:i:s');
+            $receiver = $receiverName ?? 'N/A';
+            return "Received\n{$formattedDate}\n{$receiver}";
+        }
+
         $statusLabels = [
             'pending' => 'Pending',
             'approved' => 'Approved',

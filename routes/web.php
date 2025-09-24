@@ -44,6 +44,7 @@ Route::middleware(['mobile.only'])->group(function () {
         Route::patch('/sales-transaction/{salesTransaction}/reject', [SalesTransactionController::class, 'reject'])->name('sales-transaction.reject');
         Route::patch('/sales-transaction/po/{poNumber}/approve', [SalesTransactionController::class, 'approvePO'])->name('sales-transaction.approve-po');
         Route::patch('/sales-transaction/po/{poNumber}/reject', [SalesTransactionController::class, 'rejectPO'])->name('sales-transaction.reject-po');
+        Route::patch('/sales-transaction/po/{poNumber}/receive', [SalesTransactionController::class, 'receivePO'])->name('sales-transaction.receive-po');
         Route::get('/sales-transaction/po/{poNumber}/edit', [SalesTransactionController::class, 'editPO'])->name('sales-transaction.edit-po');
         Route::patch('/sales-transaction/po/{poNumber}', [SalesTransactionController::class, 'updatePO'])->name('sales-transaction.update-po');
         Route::delete('/sales-transaction/po/{poNumber}', [SalesTransactionController::class, 'deletePO'])->name('sales-transaction.delete-po');
@@ -55,6 +56,11 @@ Route::middleware(['mobile.only'])->group(function () {
         // Profile Routes
         Route::get('/profile', [ProfileController::class, 'index'])->name('profile');
         Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+        
+        // Return Coming Soon Route
+        Route::get('/return/coming-soon', function () {
+            return view('return.coming-soon');
+        })->name('return.coming-soon');
         
         // Reports Routes - Owner Only
         Route::middleware('role:owner')->group(function () {

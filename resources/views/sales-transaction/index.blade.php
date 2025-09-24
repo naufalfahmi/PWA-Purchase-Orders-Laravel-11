@@ -177,6 +177,9 @@
         <button onclick="filterByStatus('rejected')" class="px-4 py-2 text-sm font-medium rounded-full whitespace-nowrap transition-colors {{ request('approval_status') === 'rejected' ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
             Rejected
         </button>
+        <button onclick="filterByStatus('received')" class="px-4 py-2 text-sm font-medium rounded-full whitespace-nowrap transition-colors {{ request('approval_status') === 'received' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
+            Received
+        </button>
     </div>
 
     <!-- Purchase Orders List -->
@@ -213,6 +216,53 @@
 /* Prevent scroll when loading */
 body.loading {
     overflow: hidden;
+}
+
+/* Mobile Touch Optimizations */
+@media (max-width: 640px) {
+    /* Better touch targets for mobile */
+    .po-item {
+        -webkit-tap-highlight-color: rgba(0, 0, 0, 0.1);
+        touch-action: manipulation;
+    }
+    
+    /* Mobile button optimizations */
+    button[onclick*="receivePO"] {
+        min-height: 44px; /* iOS recommended touch target */
+        min-width: 44px;
+        -webkit-tap-highlight-color: transparent;
+        touch-action: manipulation;
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+    }
+    
+    /* Prevent zoom on input focus */
+    input, select, textarea {
+        font-size: 16px;
+    }
+    
+    /* Better spacing for mobile */
+    .po-item .bg-green-50 {
+        padding: 12px 16px;
+    }
+    
+    /* Mobile-friendly button states */
+    button[onclick*="receivePO"]:active {
+        transform: scale(0.98);
+        transition: transform 0.1s ease;
+    }
+    
+    /* Loading state for mobile */
+    .animate-spin {
+        animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
 }
 
 /* Filter active state */
@@ -1601,6 +1651,124 @@ function refreshServerList() {
     .finally(() => {
         if (loadingIndicator) loadingIndicator.classList.add('hidden');
         enableScroll();
+    });
+}
+
+// Function to mark PO as received
+function receivePO(poNumber) {
+    // Haptic feedback for mobile (if available)
+    if (navigator.vibrate) {
+        navigator.vibrate(50); // Short vibration
+    }
+    
+    // Mobile-friendly confirmation
+    if (!confirm('Apakah Anda yakin ingin menandai PO ' + poNumber + ' sebagai received?')) {
+        return;
+    }
+
+    // Find the button (handle both mobile and desktop layouts)
+    const button = event.target.closest('button');
+    const originalContent = button.innerHTML;
+    
+    // Show loading state with better mobile feedback
+    button.innerHTML = `
+        <div class="flex items-center justify-center space-x-2">
+            <svg class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+            </svg>
+            <span>Processing...</span>
+        </div>
+    `;
+    button.disabled = true;
+    button.classList.add('opacity-75', 'cursor-not-allowed');
+
+    fetch(`/sales-transaction/po/${poNumber}/receive`, {
+        method: 'PATCH',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Haptic feedback for success
+            if (navigator.vibrate) {
+                navigator.vibrate([100, 50, 100]); // Success pattern
+            }
+            
+            // Show success feedback before reload
+            button.innerHTML = `
+                <div class="flex items-center justify-center space-x-2">
+                    <svg class="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                    <span>Success!</span>
+                </div>
+            `;
+            button.classList.remove('bg-blue-600', 'hover:bg-blue-700', 'active:bg-blue-800');
+            button.classList.add('bg-green-600');
+            
+            // Reload after short delay to show success state
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+        } else {
+            // Haptic feedback for error
+            if (navigator.vibrate) {
+                navigator.vibrate([200, 100, 200]); // Error pattern
+            }
+            
+            // Show error state
+            button.innerHTML = `
+                <div class="flex items-center justify-center space-x-2">
+                    <svg class="w-4 h-4 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                    <span>Error</span>
+                </div>
+            `;
+            button.classList.remove('bg-blue-600', 'hover:bg-blue-700', 'active:bg-blue-800');
+            button.classList.add('bg-red-600');
+            
+            // Show mobile-friendly error message
+            setTimeout(() => {
+                alert(data.message || 'Terjadi kesalahan saat menandai PO sebagai received');
+                button.innerHTML = originalContent;
+                button.disabled = false;
+                button.classList.remove('opacity-75', 'cursor-not-allowed', 'bg-red-600');
+                button.classList.add('bg-blue-600', 'hover:bg-blue-700', 'active:bg-blue-800');
+            }, 2000);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        
+        // Haptic feedback for network error
+        if (navigator.vibrate) {
+            navigator.vibrate([200, 100, 200]); // Error pattern
+        }
+        
+        // Show error state
+        button.innerHTML = `
+            <div class="flex items-center justify-center space-x-2">
+                <svg class="w-4 h-4 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+                <span>Error</span>
+            </div>
+        `;
+        button.classList.remove('bg-blue-600', 'hover:bg-blue-700', 'active:bg-blue-800');
+        button.classList.add('bg-red-600');
+        
+        // Show mobile-friendly error message
+        setTimeout(() => {
+            alert('Terjadi kesalahan saat menandai PO sebagai received');
+            button.innerHTML = originalContent;
+            button.disabled = false;
+            button.classList.remove('opacity-75', 'cursor-not-allowed', 'bg-red-600');
+            button.classList.add('bg-blue-600', 'hover:bg-blue-700', 'active:bg-blue-800');
+        }, 2000);
     });
 }
 </script>

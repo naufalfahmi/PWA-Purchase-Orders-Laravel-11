@@ -152,6 +152,24 @@
             font-weight: bold;
         }
         
+        .status-received {
+            background-color: #dbeafe;
+            color: #1e40af;
+            padding: 4px 6px;
+            border-radius: 4px;
+            font-size: 8px;
+            font-weight: bold;
+            line-height: 1.2;
+            display: inline-block;
+            text-align: center;
+        }
+        
+        .status-received small {
+            font-size: 6px;
+            font-weight: normal;
+            opacity: 0.9;
+        }
+        
         .text-right {
             text-align: right;
         }
@@ -209,16 +227,9 @@
         <h3>Ringkasan Data</h3>
         <?php
             $totalTransactions = $transactions->groupBy('po_number')->count();
-            // Match row logic: use quantity_carton if > 0 else quantity_piece, then multiply by unit_price
-            $totalAmount = $transactions->reduce(function($carry, $t){
-                $qty = ($t->quantity_carton ?? 0) > 0 ? ($t->quantity_carton ?? 0) : ($t->quantity_piece ?? 0);
-                $unit = $t->unit_price ?? 0;
-                return $carry + ($qty * $unit);
-            }, 0);
-            $totalQuantity = $transactions->reduce(function($carry, $t){
-                $qty = ($t->quantity_carton ?? 0) > 0 ? ($t->quantity_carton ?? 0) : ($t->quantity_piece ?? 0);
-                return $carry + $qty;
-            }, 0);
+            // Use total_amount and total_quantity_piece from database
+            $totalAmount = $transactions->sum('total_amount');
+            $totalQuantity = $transactions->sum('total_quantity_piece');
             $supplierCounts = $transactions->groupBy(function($t){ return optional($t->supplier)->nama_supplier ?: 'N/A'; })->count();
         ?>
         <div class="summary-grid">
@@ -260,6 +271,8 @@
                     <th style="width: 10%;">Total Harga</th>
                     <th style="width: 8%;">Status</th>
                     <th style="width: 12%;">Approver</th>
+                    <th style="width: 12%;">Diterima Oleh</th>
+                    <th style="width: 10%;">Tanggal Diterima</th>
                 </tr>
             </thead>
             <tbody>
@@ -284,10 +297,16 @@
                             <td class="text-center">{{ $transaction->quantity_carton ?? 0 }}</td>
                             <td class="text-center">{{ $transaction->quantity_piece ?? 0 }}</td>
                             <td class="text-right">Rp {{ number_format($transaction->unit_price ?? 0, 0, ',', '.') }}</td>
-                            <td class="text-right">Rp {{ number_format((((($transaction->quantity_carton ?? 0) > 0 ? ($transaction->quantity_carton ?? 0) : ($transaction->quantity_piece ?? 0)) * ($transaction->unit_price ?? 0))), 0, ',', '.') }}</td>
+                            <td class="text-right">Rp {{ number_format($transaction->total_amount ?? 0, 0, ',', '.') }}</td>
                             @if($rowIndex === 0)
                                 <td class="text-center" rowspan="{{ $rowspan }}">
-                                    @if($first->approval_status == 'pending')
+                                    @if($first->received_at)
+                                        <span class="status-received">
+                                            Received<br>
+                                            <small>{{ \Carbon\Carbon::parse($first->received_at)->format('d/m/Y H:i:s') }}</small><br>
+                                            <small>{{ optional($first->receiver)->name ?? '-' }}</small>
+                                        </span>
+                                    @elseif($first->approval_status == 'pending')
                                         <span class="status-pending">Pending</span>
                                     @elseif($first->approval_status == 'approved')
                                         <span class="status-approved">Approved</span>
@@ -298,6 +317,8 @@
                                     @endif
                                 </td>
                                 <td rowspan="{{ $rowspan }}">{{ optional($first->approver)->name ?? '-' }}</td>
+                                <td rowspan="{{ $rowspan }}">{{ optional($first->receiver)->name ?? '-' }}</td>
+                                <td rowspan="{{ $rowspan }}">{{ $first->received_at ? \Carbon\Carbon::parse($first->received_at)->format('d/m/Y H:i:s') : '-' }}</td>
                             @endif
                         </tr>
                     @endforeach

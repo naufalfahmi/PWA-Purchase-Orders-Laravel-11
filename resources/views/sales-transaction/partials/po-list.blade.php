@@ -1,14 +1,18 @@
 @forelse($poList as $po)
     <div class="po-item cursor-pointer hover:shadow-lg transition-all duration-200" data-po="{{ $po->po_number }}" onclick="window.location.href='{{ route('sales-transaction.show', $po->transaction_number) }}'">
         <!-- Document-style card -->
-        <div class="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow {{ $po->approval_status === 'approved' ? 'border border-green-200' : ($po->approval_status === 'rejected' ? 'border border-red-200' : 'border border-gray-200') }}">
+        <div class="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow {{ $po->received_at ? 'border border-purple-200' : ($po->approval_status === 'approved' ? 'border border-green-200' : ($po->approval_status === 'rejected' ? 'border border-red-200' : 'border border-gray-200')) }}">
             <!-- Document header with fold effect -->
-            <div class="{{ $po->approval_status === 'approved' ? 'bg-gradient-to-r from-green-50 to-emerald-50' : ($po->approval_status === 'rejected' ? 'bg-gradient-to-r from-red-50 to-rose-50' : 'bg-gradient-to-r from-blue-50 to-indigo-50') }} border-b {{ $po->approval_status === 'approved' ? 'border-green-200' : ($po->approval_status === 'rejected' ? 'border-red-200' : 'border-gray-200') }} rounded-t-lg p-4">
+            <div class="{{ $po->received_at ? 'bg-gradient-to-r from-purple-50 to-violet-50' : ($po->approval_status === 'approved' ? 'bg-gradient-to-r from-green-50 to-emerald-50' : ($po->approval_status === 'rejected' ? 'bg-gradient-to-r from-red-50 to-rose-50' : 'bg-gradient-to-r from-blue-50 to-indigo-50')) }} border-b {{ $po->received_at ? 'border-purple-200' : ($po->approval_status === 'approved' ? 'border-green-200' : ($po->approval_status === 'rejected' ? 'border-red-200' : 'border-gray-200')) }} rounded-t-lg p-4">
                 <div class="flex items-center justify-between">
                     <div class="flex items-center space-x-3">
                         <!-- Document icon -->
-                        <div class="w-10 h-10 {{ $po->approval_status === 'approved' ? 'bg-green-100' : ($po->approval_status === 'rejected' ? 'bg-red-100' : 'bg-blue-100') }} rounded-lg flex items-center justify-center">
-                            @if($po->approval_status === 'approved')
+                        <div class="w-10 h-10 {{ $po->received_at ? 'bg-purple-100' : ($po->approval_status === 'approved' ? 'bg-green-100' : ($po->approval_status === 'rejected' ? 'bg-red-100' : 'bg-blue-100')) }} rounded-lg flex items-center justify-center">
+                            @if($po->received_at)
+                                <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+                                </svg>
+                            @elseif($po->approval_status === 'approved')
                                 <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                                 </svg>
@@ -121,16 +125,59 @@
             </div>
             
             <!-- Document footer -->
-            @if($po->approval_status === 'approved')
-                <div class="bg-green-50 border-t border-green-100 rounded-b-lg px-4 py-2">
+            @if($po->received_at)
+                <div class="bg-purple-50 border-t border-purple-100 rounded-b-lg px-4 py-2">
                     <div class="flex items-center justify-between text-xs">
+                        <div class="flex items-center text-purple-600">
+                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+                            </svg>
+                            <span class="font-medium">Purchase Order sudah diterima</span>
+                        </div>
+                        <span class="text-purple-500">{{ \Carbon\Carbon::parse($po->received_at)->locale('id')->diffForHumans() }}</span>
+                    </div>
+                </div>
+            @elseif($po->approval_status === 'approved')
+                <div class="bg-green-50 border-t border-green-100 rounded-b-lg px-3 py-3 sm:px-4 sm:py-2">
+                    <!-- Mobile Layout: Stack vertically -->
+                    <div class="block sm:hidden">
+                        <div class="flex items-center text-green-600 mb-2">
+                            <svg class="w-4 h-4 mr-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                            <span class="font-medium text-xs">Purchase Order sudah disetujui</span>
+                        </div>
+                        @if(Auth::user()->isSales())
+                            <button onclick="event.stopPropagation(); receivePO('{{ $po->po_number }}')" class="w-full px-4 py-2.5 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-sm font-medium rounded-lg transition-all duration-200 touch-manipulation">
+                                <div class="flex items-center justify-center space-x-2">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+                                    </svg>
+                                    <span>Mark as Received</span>
+                                </div>
+                            </button>
+                        @endif
+                        <div class="text-center mt-2">
+                            <span class="text-green-500 text-xs">{{ \Carbon\Carbon::parse($po->created_at)->locale('id')->diffForHumans() }}</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Desktop Layout: Horizontal -->
+                    <div class="hidden sm:flex items-center justify-between text-xs">
                         <div class="flex items-center text-green-600">
                             <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                             </svg>
                             <span class="font-medium">Purchase Order sudah disetujui</span>
                         </div>
-                        <span class="text-green-500">{{ \Carbon\Carbon::parse($po->created_at)->locale('id')->diffForHumans() }}</span>
+                        <div class="flex items-center space-x-2">
+                            @if(Auth::user()->isSales())
+                                <button onclick="event.stopPropagation(); receivePO('{{ $po->po_number }}')" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded-full transition-colors touch-manipulation">
+                                    Mark as Received
+                                </button>
+                            @endif
+                            <span class="text-green-500">{{ \Carbon\Carbon::parse($po->created_at)->locale('id')->diffForHumans() }}</span>
+                        </div>
                     </div>
                 </div>
             @elseif($po->approval_status === 'rejected')

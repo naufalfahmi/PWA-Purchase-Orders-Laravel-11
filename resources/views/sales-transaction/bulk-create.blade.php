@@ -50,6 +50,82 @@
     font-weight: 600;
 }
 
+/* Mobile responsive adjustments for quantity layout */
+@media (max-width: 1024px) {
+    .product-row .grid {
+        gap: 0.75rem;
+    }
+    
+    .product-row .lg\\:col-span-2 {
+        grid-column: span 1;
+    }
+}
+
+@media (max-width: 640px) {
+    .product-row {
+        padding: 0.75rem;
+    }
+    
+    .product-row .grid {
+        gap: 0.5rem;
+    }
+    
+    /* Keep quantity inputs side by side on mobile */
+    .product-row .grid-cols-2 {
+        grid-template-columns: 1fr 1fr !important;
+        gap: 0.5rem;
+    }
+    
+    /* Force side by side layout for quantity container */
+    .product-row .lg\\:col-span-2 .grid-cols-2 {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important;
+        gap: 0.5rem;
+    }
+    
+    /* Make labels smaller on mobile */
+    .product-row label {
+        font-size: 0.75rem;
+        margin-bottom: 0.25rem;
+    }
+    
+    .product-row .text-xs {
+        font-size: 0.625rem;
+    }
+    
+    /* Ensure inputs are touch-friendly on mobile */
+    .product-row input[type="number"] {
+        min-height: 44px;
+        font-size: 16px; /* Prevent zoom on iOS */
+    }
+}
+
+/* Extra small mobile devices - still keep side by side */
+@media (max-width: 480px) {
+    .product-row .grid-cols-2 {
+        grid-template-columns: 1fr 1fr !important;
+        gap: 0.25rem;
+    }
+    
+    .product-row .lg\\:col-span-2 .grid-cols-2 {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important;
+        gap: 0.25rem;
+    }
+    
+    /* Make inputs even more compact on very small screens */
+    .product-row input[type="number"] {
+        min-height: 40px;
+        font-size: 14px;
+        padding: 0.5rem;
+    }
+    
+    /* Smaller labels on very small screens */
+    .product-row .text-xs {
+        font-size: 0.5rem;
+    }
+}
+
 .quantity-unit {
     color: #6b7280;
     font-size: 0.75rem;
@@ -644,36 +720,58 @@
         
         <!-- Hidden fields for backend compatibility -->
         <input type="hidden" name="products[INDEX][supplier_id]" class="supplier-id-input" value="">
-        <input type="hidden" name="products[INDEX][quantity_type]" class="quantity-type-hidden" value="">
-        <input type="hidden" name="products[INDEX][quantity_carton]" class="quantity-carton-hidden" value="0">
-        <input type="hidden" name="products[INDEX][quantity_piece]" class="quantity-piece-hidden" value="0">
         
         <!-- Main Product Row -->
-        <div class="grid grid-cols-1 lg:grid-cols-6 gap-4 mb-3 min-w-0">
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-3 min-w-0">
             <!-- Produk -->
-            <div class="lg:col-span-3 min-w-0">
+            <div class="lg:col-span-2 min-w-0">
                 <label class="block text-sm font-medium text-gray-700 mb-2">Produk <span class="text-red-500">*</span></label>
-                <select class="input-field product-select w-full" name="products[INDEX][product_id]" required>
+                <select class="input-field product-select w-full" name="products[INDEX][product_id]" required onchange="updateProductInfo(this)">
                     <option value="">Pilih Supplier terlebih dahulu</option>
                 </select>
             </div>
             
-            <!-- Quantity -->
+            <!-- Quantity Row - CTN and PCS side by side -->
             <div class="lg:col-span-2">
-                <label class="block text-sm font-medium text-gray-700 mb-2">Quantity <span class="text-red-500">*</span></label>
-                <div class="mobile-quantity-container">
-                    <div class="flex gap-2">
-                        <select class="quantity-type-select input-field w-24 flex-shrink-0" onchange="onQuantityTypeChange(this)">
-                            <option value="carton">CTN</option>
-                            <option value="piece">PCS</option>
-                        </select>
-                        <input type="number" name="products[INDEX][quantity_carton]" min="0" class="input-field quantity-input flex-1" oninput="calculateRowTotal(this)" onkeyup="calculateRowTotal(this)" onfocus="clearZeroValue(this)" placeholder="Qty">
-                        <input type="number" name="products[INDEX][unit_price]" step="0.01" min="0" class="input-field unit-price flex-1" oninput="calculateRowTotal(this)" placeholder="Harga">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Quantity</label>
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="block text-xs text-gray-500 mb-1">CTN</label>
+                        <input type="number" name="products[INDEX][quantity_carton]" min="0" class="input-field quantity-carton-input w-full" oninput="calculateRowTotal(this)" onkeyup="calculateRowTotal(this)" onfocus="clearZeroValue(this)" placeholder="0" value="0">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-500 mb-1">PCS</label>
+                        <input type="number" name="products[INDEX][quantity_piece]" min="0" class="input-field quantity-piece-input w-full" oninput="calculateRowTotal(this)" onkeyup="calculateRowTotal(this)" onfocus="clearZeroValue(this)" placeholder="0" value="0">
                     </div>
                 </div>
             </div>
-            
-           
+        </div>
+        
+        <!-- Unit Price Row -->
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-3 min-w-0">
+            <div class="lg:col-span-2"></div> <!-- Empty space for alignment -->
+            <div class="lg:col-span-2">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Harga Satuan</label>
+                <input type="number" name="products[INDEX][unit_price]" step="0.01" min="0" class="input-field unit-price w-full" oninput="calculateRowTotal(this)" placeholder="0" readonly>
+            </div>
+        </div>
+        
+        <!-- Total Quantity Display -->
+        <div class="mb-3">
+            <div class="bg-gray-50 p-3 rounded-lg">
+                <div class="flex justify-between items-center text-sm">
+                    <span class="text-gray-600">Total Quantity:</span>
+                    <span class="font-semibold text-gray-900">
+                        <span class="total-quantity-display">0</span> pcs
+                    </span>
+                </div>
+                <div class="flex justify-between items-center text-sm mt-1">
+                    <span class="text-gray-600">Total Amount:</span>
+                    <span class="font-semibold text-blue-600">
+                        Rp <span class="total-amount-display">0</span>
+                    </span>
+                </div>
+            </div>
         </div>
         
         <!-- Catatan Produk -->
@@ -859,13 +957,16 @@ function clearZeroValue(input) {
 
 // Function to reset quantity and price when supplier or product changes
 function resetQuantityAndPrice(row) {
-    const quantityInput = row.querySelector('.quantity-input');
+    const cartonInput = row.querySelector('.quantity-carton-input');
+    const pieceInput = row.querySelector('.quantity-piece-input');
     const unitPriceInput = row.querySelector('.unit-price');
-    const quantityTypeSelect = row.querySelector('.quantity-type-select');
     
-    // Reset quantity input
-    if (quantityInput) {
-        quantityInput.value = '0';
+    // Reset quantity inputs
+    if (cartonInput) {
+        cartonInput.value = '0';
+    }
+    if (pieceInput) {
+        pieceInput.value = '0';
     }
     
     // Reset unit price input
@@ -873,18 +974,9 @@ function resetQuantityAndPrice(row) {
         unitPriceInput.value = '';
     }
     
-    // Reset quantity type to default (CTN)
-    if (quantityTypeSelect) {
-        quantityTypeSelect.value = 'carton';
-        onQuantityTypeChange(quantityTypeSelect);
-    }
-    
-    // Update quantity display
-    updateQuantityDisplay(row);
-    
     // Trigger calculation
-    if (quantityInput) {
-        calculateRowTotal(quantityInput);
+    if (unitPriceInput) {
+        calculateRowTotal(unitPriceInput);
     }
 }
 
@@ -896,90 +988,75 @@ function resetAllRowsQuantityAndPrice() {
     });
 }
 
-// New function for handling quantity type change in the simplified layout
-function onQuantityTypeChange(select) {
-    const row = select.closest('.product-row');
-    const quantityInput = row.querySelector('.quantity-input');
-    const quantityTypeHidden = row.querySelector('.quantity-type-hidden');
-    const quantityCartonHidden = row.querySelector('.quantity-carton-hidden');
-    const quantityPieceHidden = row.querySelector('.quantity-piece-hidden');
+// Function to calculate total quantity and amount for dual quantity input
+function calculateRowTotal(input) {
+    const row = input.closest('.product-row');
+    const cartonInput = row.querySelector('.quantity-carton-input');
+    const pieceInput = row.querySelector('.quantity-piece-input');
+    const unitPriceInput = row.querySelector('.unit-price');
+    const productSelect = row.querySelector('.product-select');
     
-    // Update placeholder based on quantity type
-    if (select.value === 'carton') {
-        quantityInput.placeholder = 'Qty in CTN';
-        quantityInput.name = quantityInput.name.replace('quantity_piece', 'quantity_carton');
-    } else if (select.value === 'piece') {
-        quantityInput.placeholder = 'Qty in PCS';
-        quantityInput.name = quantityInput.name.replace('quantity_carton', 'quantity_piece');
+    // Get values
+    const cartonQty = parseFloat(cartonInput.value) || 0;
+    const pieceQty = parseFloat(pieceInput.value) || 0;
+    const unitPrice = parseFloat(unitPriceInput.value) || 0;
+    
+    // Get quantity_per_carton from selected product
+    let quantityPerCarton = 1;
+    if (productSelect.value) {
+        const selectedOption = productSelect.querySelector('option:checked');
+        if (selectedOption && selectedOption.dataset.carton) {
+            quantityPerCarton = parseInt(selectedOption.dataset.carton) || 1;
+        }
     }
     
-    // Update hidden field for quantity type
-    quantityTypeHidden.value = select.value;
+    // Calculate total quantity in pieces
+    const totalQuantityPieces = (cartonQty * quantityPerCarton) + pieceQty;
     
-    // Clear the other hidden field
-    if (select.value === 'carton') {
-        quantityPieceHidden.value = '0';
-    } else if (select.value === 'piece') {
-        quantityCartonHidden.value = '0';
+    // Calculate total amount
+    const totalAmount = totalQuantityPieces * unitPrice;
+    
+    // Update display
+    const totalQuantityDisplay = row.querySelector('.total-quantity-display');
+    const totalAmountDisplay = row.querySelector('.total-amount-display');
+    
+    if (totalQuantityDisplay) {
+        totalQuantityDisplay.textContent = totalQuantityPieces.toLocaleString('id-ID');
     }
     
-    // Update quantity display
-    updateQuantityDisplay(row);
+    if (totalAmountDisplay) {
+        totalAmountDisplay.textContent = totalAmount.toLocaleString('id-ID');
+    }
     
-    // Trigger calculation
-    calculateRowTotal(quantityInput);
+    // Update summary
+    updateSummary();
 }
 
-// Function to update the quantity display
-function updateQuantityDisplay(row) {
-    const quantityInput = row.querySelector('.quantity-input');
-    const quantityTypeSelect = row.querySelector('.quantity-type-select');
-    const quantityTotalSpan = row.querySelector('.quantity-total');
-    const quantityUnitSpan = row.querySelector('.quantity-unit');
+// Function to update product info when product is selected
+function updateProductInfo(select) {
+    const row = select.closest('.product-row');
+    const unitPriceInput = row.querySelector('.unit-price');
+    const cartonInput = row.querySelector('.quantity-carton-input');
+    const pieceInput = row.querySelector('.quantity-piece-input');
     
-    if (!quantityInput || !quantityTypeSelect) return;
-    
-    const quantity = parseFloat(quantityInput.value) || 0;
-    const quantityType = quantityTypeSelect.value;
-    
-    let totalQuantity = quantity;
-    let unit = 'pcs';
-    
-    if (quantityType === 'carton') {
-        // Get quantity_per_carton from product data
-        const productSelect = row.querySelector('.product-select');
-        let quantityPerCarton = 1;
-        
-        if (productSelect.value) {
-            const selectedOption = productSelect.querySelector('option:checked');
-            if (selectedOption && selectedOption.dataset.carton) {
-                quantityPerCarton = parseInt(selectedOption.dataset.carton) || 1;
-            }
-        }
-        
-        totalQuantity = quantity * quantityPerCarton;
-        unit = 'pcs';
-    } else if (quantityType === 'piece') {
-        totalQuantity = quantity;
-        unit = 'pcs';
+    // Get product data
+    let selectedOption = select.selectedOptions && select.selectedOptions[0];
+    if (!selectedOption && select.value) {
+        selectedOption = select.querySelector('option[value="' + select.value + '"]');
     }
     
-    // Update both desktop and mobile quantity displays
-    if (quantityTotalSpan && quantityUnitSpan) {
-        quantityTotalSpan.textContent = totalQuantity.toLocaleString('id-ID');
-        quantityUnitSpan.textContent = unit;
-    }
+    const price = parseFloat((selectedOption && selectedOption.dataset && selectedOption.dataset.price) || 0);
+    const carton = parseInt((selectedOption && selectedOption.dataset && selectedOption.dataset.carton) || 1);
     
-    // Update mobile quantity display if it exists
-    const mobileQuantityDisplay = row.querySelector('.quantity-display-mobile');
-    if (mobileQuantityDisplay) {
-        const mobileTotalSpan = mobileQuantityDisplay.querySelector('.quantity-total');
-        const mobileUnitSpan = mobileQuantityDisplay.querySelector('.quantity-unit');
-        if (mobileTotalSpan && mobileUnitSpan) {
-            mobileTotalSpan.textContent = totalQuantity.toLocaleString('id-ID');
-            mobileUnitSpan.textContent = unit;
-        }
-    }
+    // Set unit price
+    unitPriceInput.value = price;
+    
+    // Reset quantities
+    cartonInput.value = '0';
+    pieceInput.value = '0';
+    
+    // Trigger calculation
+    calculateRowTotal(unitPriceInput);
 }
 
 
@@ -1003,8 +1080,8 @@ function addProductRow() {
     const newRow = container.lastElementChild;
     const productSelect = newRow.querySelector('.product-select');
     const supplierInput = newRow.querySelector('.supplier-id-input');
-    const quantityTypeHidden = newRow.querySelector('.quantity-type-hidden');
-    const quantityTypeSelect = newRow.querySelector('.quantity-type-select');
+    const cartonInput = newRow.querySelector('.quantity-carton-input');
+    const pieceInput = newRow.querySelector('.quantity-piece-input');
     
     // Set supplier_id from main supplier select
     const mainSupplierSelect = document.getElementById('mainSupplierSelect');
@@ -1019,10 +1096,14 @@ function addProductRow() {
         updateProductInfo(this);
     });
     
-    // Add event listener for quantity input to clear zero value
-    const quantityInput = newRow.querySelector('.quantity-input');
-    if (quantityInput) {
-        quantityInput.addEventListener('focus', function() {
+    // Add event listeners for quantity inputs to clear zero value
+    if (cartonInput) {
+        cartonInput.addEventListener('focus', function() {
+            clearZeroValue(this);
+        });
+    }
+    if (pieceInput) {
+        pieceInput.addEventListener('focus', function() {
             clearZeroValue(this);
         });
     }
@@ -1030,14 +1111,8 @@ function addProductRow() {
     // Initialize Select2 on new selects
     initSelect2ForRow(newRow);
     
-    // Default quantity type to CTN and initialize
-    if (quantityTypeSelect) {
-        quantityTypeSelect.value = 'carton';
-        onQuantityTypeChange(quantityTypeSelect);
-    }
-    
-    // Initialize quantity display
-    updateQuantityDisplay(newRow);
+    // Initialize calculation
+    calculateRowTotal(cartonInput);
     
     productIndex++;
     updateSummary();
@@ -1198,7 +1273,8 @@ function removeProductRow(button) {
     updateSummary();
 }
 
-function updateProductInfo(select) {
+// Legacy function - kept for compatibility
+function updateProductInfoLegacy(select) {
     const row = select.closest('.product-row');
     let selectedOption = select.selectedOptions && select.selectedOptions[0];
     if (!selectedOption && select.value) {
@@ -1210,17 +1286,15 @@ function updateProductInfo(select) {
     const unitPriceInput = row.querySelector('.unit-price');
     const displayUnitPrice = row.querySelector('.display-unit-price');
     
-    // Reset quantity when product changes
-    const quantityInput = row.querySelector('.quantity-input');
-    if (quantityInput) {
-        quantityInput.value = '0';
-    }
+    // Reset quantities when product changes
+    const cartonInput = row.querySelector('.quantity-carton-input');
+    const pieceInput = row.querySelector('.quantity-piece-input');
     
-    // Reset quantity type to default (CTN)
-    const quantityTypeSelect = row.querySelector('.quantity-type-select');
-    if (quantityTypeSelect) {
-        quantityTypeSelect.value = 'carton';
-        onQuantityTypeChange(quantityTypeSelect);
+    if (cartonInput) {
+        cartonInput.value = '0';
+    }
+    if (pieceInput) {
+        pieceInput.value = '0';
     }
     
     unitPriceInput.value = price;
@@ -1228,14 +1302,12 @@ function updateProductInfo(select) {
         displayUnitPrice.textContent = 'Rp ' + price.toLocaleString('id-ID');
     }
     
-    // Update quantity display and trigger calculation
-    updateQuantityDisplay(row);
-    if (quantityInput) {
-        calculateRowTotal(quantityInput);
-    }
+    // Trigger calculation
+    calculateRowTotal(unitPriceInput);
 }
 
-function calculateRowTotal(input) {
+// Legacy function - kept for compatibility
+function calculateRowTotalLegacy(input) {
     const row = input.closest('.product-row');
     const unitPrice = parseFloat((row.querySelector('.unit-price') && row.querySelector('.unit-price').value) || 0);
     
@@ -1297,19 +1369,31 @@ function updateSummary() {
     rows.forEach(row => {
         const productSelect = row.querySelector('.product-select');
         const supplierInput = row.querySelector('.supplier-id-input');
-        const quantityInput = row.querySelector('.quantity-input');
-        const quantityTypeSelect = row.querySelector('.quantity-type-select');
+        const cartonInput = row.querySelector('.quantity-carton-input');
+        const pieceInput = row.querySelector('.quantity-piece-input');
         const unitPrice = parseFloat((row.querySelector('.unit-price') && row.querySelector('.unit-price').value) || 0);
         
-        if (productSelect.value && supplierInput.value && quantityInput.value && unitPrice > 0) {
-            const rowQuantity = parseFloat(quantityInput.value || 0);
-            const quantityType = quantityTypeSelect ? quantityTypeSelect.value : 'carton';
-            const quantityDisplay = `${rowQuantity} ${quantityType.toUpperCase()}`;
+        if (productSelect.value && supplierInput.value && unitPrice > 0) {
+            const cartonQty = parseFloat(cartonInput.value || 0);
+            const pieceQty = parseFloat(pieceInput.value || 0);
             
-            if (rowQuantity > 0) {
+            // Get quantity_per_carton from selected product
+            let quantityPerCarton = 1;
+            if (productSelect.value) {
+                const selectedOption = productSelect.querySelector('option:checked');
+                if (selectedOption && selectedOption.dataset.carton) {
+                    quantityPerCarton = parseInt(selectedOption.dataset.carton) || 1;
+                }
+            }
+            
+            // Calculate total quantity in pieces
+            const totalQuantityPieces = (cartonQty * quantityPerCarton) + pieceQty;
+            const rowTotal = totalQuantityPieces * unitPrice;
+            
+            if (totalQuantityPieces > 0) {
                 totalProducts++;
-                totalQuantity += rowQuantity;
-                totalAmount += rowQuantity * unitPrice;
+                totalQuantity += totalQuantityPieces;
+                totalAmount += rowTotal;
                 
                 const ps2 = productSelect.selectedOptions && productSelect.selectedOptions[0];
                 const productName = (ps2 && ps2.dataset && ps2.dataset.name) || productSelect.value;
@@ -1320,7 +1404,15 @@ function updateSummary() {
                     ? mainSupplierSelect.selectedOptions[0].textContent.split(' - ')[1] || ''
                     : '';
                 
-                const rowTotal = rowQuantity * unitPrice;
+                // Create quantity display
+                let quantityDisplay = '';
+                if (cartonQty > 0 && pieceQty > 0) {
+                    quantityDisplay = `${cartonQty} CTN + ${pieceQty} PCS`;
+                } else if (cartonQty > 0) {
+                    quantityDisplay = `${cartonQty} CTN`;
+                } else if (pieceQty > 0) {
+                    quantityDisplay = `${pieceQty} PCS`;
+                }
                 
                 productsSummary += `
                     <div class="flex justify-between text-sm">
@@ -1329,11 +1421,11 @@ function updateSummary() {
                     </div>
                     <div class="flex justify-between text-xs text-gray-500 mb-1">
                         <span>Supplier: ${supplierName}</span>
-                        <span>@ Rp ${unitPrice.toLocaleString('id-ID')}</span>
+                        <span>@ Rp ${unitPrice.toLocaleString('id-ID')}/pcs</span>
                     </div>
-                    <div class="flex justify-between text-sm font-medium mb-2">
-                        <span>Subtotal:</span>
-                        <span>Rp ${rowTotal.toLocaleString('id-ID')}</span>
+                    <div class="flex justify-between text-xs text-gray-500 mb-1">
+                        <span>Total: ${totalQuantityPieces.toLocaleString('id-ID')} pcs</span>
+                        <span>Subtotal: Rp ${rowTotal.toLocaleString('id-ID')}</span>
                     </div>
                     <div class="border-t border-dotted border-gray-300 mb-2"></div>
                 `;
