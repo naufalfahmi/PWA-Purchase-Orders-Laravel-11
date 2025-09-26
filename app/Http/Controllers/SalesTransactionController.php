@@ -58,7 +58,24 @@ class SalesTransactionController extends Controller
             $currentSales = Sales::where('name', auth()->user()->name)->first();
             if ($currentSales) {
                 $query->where('sales_id', $currentSales->id);
+                \Log::info('Sales filtering applied', [
+                    'user_id' => auth()->id(),
+                    'user_name' => auth()->user()->name,
+                    'sales_id' => $currentSales->id,
+                    'sales_name' => $currentSales->name
+                ]);
+            } else {
+                \Log::warning('No sales record found for user', [
+                    'user_id' => auth()->id(),
+                    'user_name' => auth()->user()->name
+                ]);
             }
+        } else {
+            \Log::info('No sales filtering applied', [
+                'user_id' => auth()->id(),
+                'user_name' => auth()->user()->name ?? 'not logged in',
+                'is_sales' => auth()->check() ? auth()->user()->isSales() : false
+            ]);
         }
         
         // Filter berdasarkan tanggal
@@ -625,7 +642,24 @@ class SalesTransactionController extends Controller
             $currentSales = \App\Models\Sales::where('name', auth()->user()->name)->first();
             if ($currentSales) {
                 $query->where('sales_id', $currentSales->id);
+                \Log::info('LoadMore - Sales filtering applied', [
+                    'user_id' => auth()->id(),
+                    'user_name' => auth()->user()->name,
+                    'sales_id' => $currentSales->id,
+                    'sales_name' => $currentSales->name
+                ]);
+            } else {
+                \Log::warning('LoadMore - No sales record found for user', [
+                    'user_id' => auth()->id(),
+                    'user_name' => auth()->user()->name
+                ]);
             }
+        } else {
+            \Log::info('LoadMore - No sales filtering applied', [
+                'user_id' => auth()->id(),
+                'user_name' => auth()->user()->name ?? 'not logged in',
+                'is_sales' => auth()->check() ? auth()->user()->isSales() : false
+            ]);
         }
         
         // Apply same filters as index method
