@@ -1,4 +1,4 @@
-# Admin PWA - Laravel Mobile Application
+# PWA Purchase Orders Laravel 12
 
 Aplikasi admin PWA (Progressive Web App) untuk manajemen barang dan purchase order dengan interface mobile yang responsif.
 
@@ -33,8 +33,8 @@ Aplikasi admin PWA (Progressive Web App) untuk manajemen barang dan purchase ord
 
 1. **Clone repository**
    ```bash
-   git clone https://gitlab.com/mnaufalfahmi/munah-pwa.git
-   cd munah-pwa
+   git clone https://github.com/naufalfahmi/PWA-Purchase-Orders-Laravel-12.git
+   cd PWA-Purchase-Orders-Laravel-12
    ```
 
 2. **Install dependencies**
